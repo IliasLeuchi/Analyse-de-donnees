@@ -1,0 +1,29 @@
+---
+title : "Rapport d'Analyse de données"
+author : "LEUCHI Ilias"
+output:
+  pdf_document:
+    toc : true
+    extra_dependencies : ["float"]
+---
+
+\newpage
+\tableofcontents
+\newpage
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(car)
+library(MASS)
+library(ggpubr)
+library(lattice)
+library(corrplot)
+library("FactoMineR")
+library("factoextra")
+library(ca)
+```
+
+
+
+
+

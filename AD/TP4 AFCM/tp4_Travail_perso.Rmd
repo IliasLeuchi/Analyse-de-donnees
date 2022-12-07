@@ -1,0 +1,280 @@
+---
+output:
+  pdf_document:
+    extra_dependencies : ["float"]
+---
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(car)
+library(MASS)
+library(ggpubr)
+library(lattice)
+library(corrplot)
+library("FactoMineR")
+library("factoextra")
+library(ca)
+```
+
+# Chapitre 5 : Analyse Factorielle des Correspondances Multiples (AFM)
+
+## Exercice 27
+
+Nous traiterons des données fictives ou 27 races de chiens sont décrites avec 7 variables qualitatives.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+load(file = "C:/Users/ilias/OneDrive/Bureau/AD/chien.rda")
+class(chiens)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+H <-subset(chiens,select=-fonction)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(chiens), caption = "Extrait des données chiens")
+```
+
+
+Voici un extrait des données, nous avons 6 variables ordinales, la taille, le	poids	, la velocite, l'intelligence, l'affectation et 	l'agressivité, et une variable fonction qui determine l'utilité des chiens, qui peut être utilite, chasse ou compagnie. Pour notre analyse nous ne conserverons que les variables ordinales.
+
+Nous allons réaliser un AFM, avec fonction comme variable supplémentaire.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.mca = MCA(chiens, quali.sup = 7, graph = FALSE)
+ind= get_mca_ind(res.mca)
+var =get_mca_var(res.mca)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#Valeurs propres
+eig.val <- get_eigenvalue(res.mca)
+kable(round(eig.val,3) , caption = "Valeurs propres" ) 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
+```
+
+On commence avec les valeurs propres, on voit avec le tableau qu'à partir de 4 dimensions, plus de 70% de l'inertie total, on conserve donc les 4 premiers axes. Avec le graphique ont voit que l'axe 1 explique 28.9%, l'axe 2 23.1%, l'axe 3 12.7% et l'axe 4 9.5%. 
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$coord,3)), caption = "Extrait des coordonnée des variables")
+```
+
+On se focalise d'abord sur les variables. On obtient dans le tableau ci-dessus les coordonnées afin de tracer le grapahique des variable. 
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$cos2,3)), caption = "Extrait des Cos2 des variables") 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des variables"}
+corrplot(var$cos2, is.corr=FALSE)
+```
+
+On se penche ensuite sur les qualités de représentations (cos2) des variables. On voit à l'aide du graphique et du tableau que une grande taille aura une bonne qualité de représentation sur l'axe 1. 
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$contrib,3)) , caption = "Extrait des contributions des variables" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions pour les variables"}
+fviz_contrib(res.mca, choice = "var", axes = 1 :2, top = 15)
+```
+
+Pour les contributions des variables sur le premier plan. On remarque avec le graphique et le tableau que un faible poids à la meilleur contribution au premier plan. Sur le graphique toutes les variables au dessus de la ligne pointillée rouge peuvent être considéré comme suffisament contribuant au premier plan.   
+
+On passe maintenant au individus.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$coord,3)), caption = "Extrait des coordonnées des individus")
+```
+
+D'abord avec le tableau des coordonnées.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$cos2,3)) , caption = "Extrait des Cos2 des individus") 
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des individus"}
+corrplot(ind$cos2, is.corr=FALSE)
+```
+
+Ensuite avec les qualités de représentations des individus. On ne voit par exemple avec le graphique que les teckel et les bull-dog ont la meilleur qualité de représentation sur la dimension 1.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$contrib,3)) , caption = "Extrait des contributions des individus" )
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des individus"}
+fviz_contrib(res.mca, choice = "ind", axes = 1 :2, top = 15)
+```
+Pour les contributions des individu sur le premier plan. On remarque avec le graphique les chihuahua ont la meilleur contribution au premier plan. Toutes les individus au dessus de la ligne pointillée rouge peuvent être considéré comme suffisament contribuant au premier plan.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot"}
+fviz_mca_biplot (res.mca, repel = TRUE, ggtheme = theme_minimal ())
+```
+
+
+On peut enfin tracer le bitplot. Les individus sont en bleu, les variables sont en rouge
+et les variables supplémentaires sont en vert foncé.
+
+On  peut faire des liens entre les individus et les variables, tous les individus proche les un des autres peuvent être considéré comme des profils similaire. par exemple on voit que les boxers, les labradors, les dalmatiens et les espagn_bre sont silimaires avec une grande taille et une vitesse élevé. 
+
+Quand on regarde les variables supplémentaires, on voit qu'elles sont éloigner les une des autres surtout pour les chiens de compagnie qu'on arrive bien à distinguer des deux autres. 
+
+On vas s'intéresser au rapports de corrélations entre les variables qualitatives et les deux premièrescomposantes principales
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var$eta2[,1:2] , 3 ) , caption = "Rapports de corrélations entre les variables qualitatives et les deux premières composantes principales" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des rapports de corrélation"}
+plot.MCA(res.mca,choix="var",invisible=c("ind"))
+```
+
+On voit avec le tableau et le graphique que le poids est la variable la plus corrélée à l'axe 1 tandis que le poids et la plus corrélée à l'axe 2. 
+
+
+On décide ensuite de rajouter des données manquantes a nos données, et nous refaisons une AFM, pour voir si elles sont prises en compte.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+chiensNA <- H
+chiensNA[1,1] <-NA
+chiensNA[2,2] <-NA
+
+res.mca.NA <-MCA(chiensNA,graph=FALSE)
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot avec les données manquantes"}
+fviz_mca_biplot (res.mca.NA, repel = TRUE, ggtheme = theme_minimal ())
+```
+
+Quand on refait le bitplot on voit bien des points supplémentaire avec .NA en sufixe, donc les données manquantes sont  prises en compte par la fonction MCA comme des individus classique, ce qui n'est pas correcte.
+
+
+On veut maintenant comparer l’ACM et l’AFC dans le cas particulier de deux variables qualitative. Noius allons réaliser l’AFC du tableau de contingence croisant les variables taille et poids, et comparer les valeurs propres.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+N <-table(H[,1:2])
+
+res.ca.N<-CA(N,graph=FALSE)
+res.mca.N<-MCA(H[,1:2],graph=FALSE)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(get_eigenvalue(res.ca.N),3), caption = "Valeurs propre de l'AFC" )
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(get_eigenvalue(res.mca.N),3), caption = "Valeurs propre de l'AFM" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+#relation entre les valeurs propres des deux analyses
+vpAFC <- res.ca.N$eig[,1]
+
+
+c = data.frame(c(round((1+sqrt(vpAFC))/2 , 3) ,round((1-sqrt(vpAFC))/2 , 3) ))
+rownames(c) = c("dim 1","dim 2","dim 4","dim 3")
+colnames(c)= c( "Valeurs propres")
+
+kable(c, caption = "Valeurs propres AFM avec l'AFC")
+```
+
+On retrouve un lien entre les valeurs propres de l'AFC et l'ACM. Quand on joue avec la racine carrée des les valeurs propres de l'AFC, on arrive à retouvé les valeurs propres de l'ACM. 
+
+$\frac {1+ \sqrt{vpDim1AFC} } {2} = vp \ dim1 \ ACM$
+
+$\frac {1+ \sqrt{vpDim2AFC} } {2} = vp \ dim2 \ ACM$
+
+$\frac {1- \sqrt{vpDim1AFC} } {2} = vp \ dim3 \ ACM$
+
+$\frac {1- \sqrt{vpDim2AFC} } {2} = vp \ dim4 \ ACM$
+
+Ou $vp$ sont les valeurs propres selon la méthode et la dimension.
+
+
+\newpage
+
+## Exercice 28
+
+
+Dans cette partie, nous allons présenter le package R missMDA. Il gére les données manquantes en ACP et en ACM, et de choisir le nombre de composantes par validation croisée. Nous décrirons les principales fonctionnalités de ce package, avec à chaque fois une explication de la méthode.
+
+
+
+Overimpute : Évaluez l'ajustement de la distribution prédictive après avoir effectué une imputation multiple
+
+estim_ncpPCA : Estime le nombre de dimensions pour l'Analyse en Composantes Principales par validation croisée
+
+MIFAMD : effectue des imputations multiples pour des données mixtes (continues et catégorielles) en utilisant l'analyse factorielle de données mixtes.
+
+estim_ncpMultilevel : Estimez le nombre de dimensions pour la composante principale multiniveau (ACP multiniveau, AMC multiniveau ou analyse factorielle multiniveau de données mixtes) par validation croisée.
+
+estim_ncpMCA : Estimer le nombre de dimensions pour l'Analyse des Correspondances Multiples par validation croisée
+
+MIPCA : Réalise une imputation multiple avec un modèle ACP. Peut être utilisé comme étape préliminaire pour effectuer une imputation multiple dans l'ACP.
+
+MIMCA : Effectue des imputations multiples pour des données catégorielles en utilisant l'analyse des correspondances multiples.
+
+estim_ncpFAMD : Estime le nombre de dimensions pour l'Analyse Factorielle de Données Mixtes par validation croisée
+
+prelim : Cette fonction effectue des opérations de regroupement et de tri sur un ensemble de données imputées à plusieurs reprises. Elle crée un objet mids qui est nécessaire à l'entrée de with.mids, qui permet d'analyser l'ensemble de données imputées à plusieurs reprises. L'ensemble de données incomplètes d'origine doit être disponible pour que nous sachions où se trouvent les données manquantes.
+
+
+imputeFAMD : Imputez les valeurs manquantes d'un ensemble de données mixtes (avec des variables continues et catégorielles) en utilisant la méthode des composantes principales "analyse factorielle pour données mixtes" (FAMD). Peut être utilisé comme une étape préliminaire avant d'exécuter FAMD sur un ensemble de données incomplet.
+
+imputeMFA : Impute un jeu de données avec des variables structurées en groupes de variables (groupes de variables continues ou catégorielles).
+
+imputeMCA : Imputez les valeurs manquantes d'un ensemble de données catégoriques en utilisant l'analyse des correspondances multiples (ACM). Peut être utilisé comme une étape préliminaire avant d'effectuer l'ACM sur un ensemble de données incomplet.
+
+
+imputeCA : Imputez les entrées manquantes d'un tableau de contingence en utilisant l'analyse des correspondances (AC). Peut être utilisé comme une étape préliminaire avant d'effectuer l'AC sur un ensemble de données incomplet.
+
+imputePCA : Impute les valeurs manquantes d'un jeu de données avec le modèle d'analyse en composantes principales. Peut être utilisé comme une étape préliminaire avant d'effectuer une ACP sur un jeu de données complet.
+
+imputeMultilevel : Imputez les valeurs manquantes d'un ensemble de données mixtes multi-niveaux (avec une variable qui regroupe les individus, et avec des variables continues et catégorielles) en utilisant la méthode des composantes principales "analyse factorielle multi-niveaux pour données mixtes".
+
+plot.MIMCA : À partir des ensembles de données imputées multiples, la fonction trace des graphiques pour les individus, les catégories et les dimensions pour l'analyse des correspondances multiples (ACM).
+
+
+plot.MIPCA : À partir des ensembles de données imputées multiples, la fonction trace des graphiques pour les individus, les variables et les dimensions pour l'analyse en composantes principales (ACP).
+
+
+
+
+
+
+
+
+
+
+

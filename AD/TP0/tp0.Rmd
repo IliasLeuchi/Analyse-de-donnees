@@ -1,0 +1,159 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-10-07"
+---
+
+#Exo 1
+```{r}
+x = c(1, 3, 5, 7, 9)
+y = c(2, 3, 5, 7, 11, 13)
+z = c(9, 3, 2, 5, 9, 2, 3,9, 1)
+```
+
+```{r}
+x + 2 #Ajoute 2 à chaque élément du vecteur x
+y * 3 
+length(x) 
+x + y #attention X et Y ne sont pas de la meme taille le dernier element de Y est additionner au 1er de X
+
+sum(x > 5) #Nombre d'element strictement supperieur à 5 
+sum(x[x > 5]) #Somme des element strictement supperieur à 5 
+sum(x > 5 | x <3) #Nombre d'element supp à 5 strictement ou inf à 3 strictetement 
+y[3] #affiche le 3eme element de Y
+y[-3] #supprime le 3eme element de Y
+y[x] #
+(y > 7) #Pour chaque element de Y dit si il est supp à 7
+y[y > 7] #affiche les element strictement supperieur à 7
+sort(z) #trie z dans l'odre croissant 
+sort(z, dec = TRUE) #trie z dans l'odre décroissant 
+rev(z) #affiche le vecteur à l'envers 
+order(z) #Donne les indices dans l'ordre croissant (en gros ici le 9eme element est le plus petit)
+unique(z) #reecri sans les doublons (distinct)
+duplicated(z) #renvoi TRUE si il remarque qu'un element c'est répéter et FALSE sinon
+table(z) #trie à plat des effectifs
+rep(z, 3) #reecri z trois fois
+```
+
+
+
+#Exercice 2
+```{r}
+matrix(1,nrow =9,ncol=9)-diag(x =1,nrow = 9,ncol =9)
+```
+
+
+```{r}
+v1<-c(1:10)
+v2<-c(100:110)
+```
+
+#Exercice 3
+```{r}
+v = append(v1,v2,after = 2)
+v
+```
+
+#Exercice 4
+
+```{r}
+x = c (4.12, 1.84, 4.28, 4.23, 1.74, 2.06, 3.37, 3.83, 5.15, 3.76, 3.23, 4.87,
+5.96, 2.29, 4.58)
+```
+
+
+```{r}
+x[-4:-1]
+```
+```{r}
+x[c(-1,-15)]
+```
+```{r}
+x[x > 2.57 & x<3.48]
+```
+
+```{r}
+x[x > 4.07 | x<1.48]
+```
+
+```{r}
+order(x)[1]
+```
+#Exercice 5
+
+```{r}
+A =matrix(c(-2, 1, -3 ,-2,1,2,1, -1,
+-2,1, 1, -1,
+-1 ,-3,1 ,1), ncol =4, nrow =4, byrow = T)
+```
+
+
+```{r}
+B=matrix(c(2,-1, 3,-4,2, -2 ,4,-5,-2,1,3,-1,-1,-3, 1 ,-1), ncol =4, nrow =4, byrow = T)
+B
+```
+
+```{r}
+det(A) #matrice carré det different de 0 donc inversible
+det(B) ##matrice carré det different de 0 donc inversible
+```
+
+
+```{r}
+iA =solve(A) #Inverse de A
+iB =solve(B)
+```
+
+
+```{r}
+det(A)
+det(t(A)) #determinant du transposé de A = det(A)
+```
+
+```{r}
+det(iA)
+1/det(A)
+```
+
+
+```{r}
+det(A%*%B)
+det(A)*det(B)
+```
+
+```{r}
+t(iA)
+solve(t(A))
+```
+
+```{r}
+t(A%*%B)
+t(B)%*%t(A)
+```
+```{r}
+solve(A%*%B)
+solve(B)%*%solve(A)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
