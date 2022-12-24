@@ -1,0 +1,254 @@
+---
+title: "tp5"
+author: "LEUCHI Ilias"
+date: "2022-11-25"
+output: html_document
+---
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+library("corrplot")
+```
+
+# Classification Ascendante Hiérarchique : CAH
+
+```{r}
+fromage <- read.delim("C:/Users/ilias/OneDrive/Bureau/AD/fromageTP5.txt", row.names=1)
+```
+
+```{r}
+# Centrage réduction des données pour éviter que les variables à forte variance pèsent indûment sur les résultats
+
+fromage.cr <- scale(fromage,center=T,scale=T)
+```
+
+```{r}
+# Matrice des distances euclidienne entre individus, qui sert a tracer le dendrogramme
+d.fromage <- dist(fromage.cr)
+```
+
+```{r}
+# CAH - Critère de Ward
+#method = “ward.D2” correspond au vrai critère de Ward utilisant le carré de la distance
+cah.ward <- hclust(d.fromage,method="ward.D2")
+```
+
+
+```{r}
+#dendrogramme
+plot(cah.ward) 
+rect.hclust(cah.ward,k=4) #rectangle pour différencier les classes ici en 4 classes
+```
+Le dendrogramme “suggère” un découpage en 4 groupes. On note qu’une classe de fromages, les “fromages frais” (tout à gauche), se démarque fortement des autres au point qu’on aurait pu envisager aussi un découpage en 2 groupes seulement. Nous y reviendrons plus longuement lorsque nous mixerons l’analyse avec une analyse en composantes
+principales (ACP).
+
+```{r}
+#découpage en 4 groupes
+#liste des groupes
+groupes.cah <- cutree(cah.ward,k=4)
+groupes.cah
+```
+
+```{r}
+
+```
+
+# Méthode des centres mobiles : kmean (partition qui consolide la CAH)
+
+```{r}
+#K-means avec les données centrées et réduites
+#center = ... : nombre de groupes demandés
+#nstart = ... : nombre d’essais avec différents individus de départ (parce que les résultats sont dépendants de l’initialisation)
+
+groupes.kmeans <- kmeans(fromage.cr,centers=4,nstart=5)
+```
+
+
+```{r}
+#correspondances des groupes entre CAH et KMeans : 
+table(groupes.cah,groupes.kmeans$cluster)
+
+```
+
+
+## Aide à la détection du nombre adéquat de groupes pour kmeans
+
+```{r}
+library(fpc)
+```
+
+```{r}
+#Indice de Calinski Harabasz
+sol.kmeans <- kmeansruns(fromage.cr,krange=2 :10,criterion="ch")
+```
+
+```{r}
+plot(1 :10,sol.kmeans$crit,type="b",xlab="Nb. de groupes",ylab="Silhouette")
+```
+
+
+## Interprétation des classes : Statistiques comparatives
+
+```{r}
+ # Fonction de calcul des stats
+stat.comp <- function(x,y){
+K <- length(unique(y))# Nombre de groupes
+n <- length(x)# Nombre d’observations
+m <- mean(x)# Moyenne globale
+TSS <- sum((x-m)**2) # Variabilité totale
+nk <- table(y) # Effectifs conditionnels
+mk <- tapply(x,y,mean) # Moyennes conditionnelles
+BSS <- sum(nk * (mk - m)**2) # Variabilité expliquée
+result <- c(mk,100.0*BSS/TSS) # Moyennes + prop. variance expliquée
+names(result) <- c(paste("G",1 :K),"% epl.")# Nommer les élements du vecteur
+return(result) # Renvoyer le vecteur résultat
+}
+```
+
+
+
+```{r}
+# Appliquer stat.comp aux variables de la base originelle fromage et non pas aux variables centrées et réduites
+sapply(fromage,stat.comp,y=groupes.cah)
+```
+
+
+## ACP
+
+```{r}
+acp <- princomp(fromage,cor=T,scores=T)
+```
+
+```{r}
+#valeur propre 
+plot(1 :9,acp$sdev^2,type="b",xlab="Nb. de facteurs",ylab="Val. Propres")
+# 2 axes retenus
+```
+
+```{r}
+biplot(acp,cex=0.65)
+
+```
+
+```{r}
+# Positionnement des groupes dans le plan factoriel avec étiquettes des points
+plot(acp$scores[,1],acp$scores[,2],type="n",xlim=c(-5,5),ylim=c(-5,5))
+text(acp$scores[,1],acp$scores[,2],col=c("red","green","blue","black")
+[groupes.cah], cex =0.65, labels=rownames(fromage),xlim=c(-5,5),ylim=c(-5,5))
+```
+. Pour les groupes 1, 2 et 3 (vert, rouge, bleu), on perçoit à partir du
+graphique biplot de la page précédente qu’il y a quelque chose autour de l’opposition entre
+nutriments (lipides, calories, cholestérol, protéines, magnésium, calcium) et vitamines
+(rétinol, folates). Mais, dans quel sens exactement ?
+La lecture n’est pas facile du fait de l’effet perturbateur du groupe 4.
+
+
+## Approfondir l’analyse : Retirer les fromages frais du jeu de données
+
+```{r}
+# Retirer les 4 obs. du groupe 4
+fromage.subset <- fromage[groupes.cah !=4,]
+# Centrage et réduction
+fromage.subset.cr <- scale(fromage.subset,center=T,scale=T)
+```
+
+
+```{r}
+# Matrice des distances
+d.subset <- dist(fromage.subset.cr)
+```
+
+
+```{r}
+# cah 2
+cah.subset <- hclust(d.subset,method="ward.D2")
+ #Affichage
+plot(cah.subset)
+```
+
+
+```{r}
+# Groupes
+groupes.subset <- cutree(cah.subset,k=3)
+# Affichage des groupes
+sort(groupes.subset)
+```
+
+
+```{r}
+# acp
+acp.subset <- princomp(fromage.subset,cor=T,scores=T)
+# Screeplot — 2 axes retenus
+plot(1 :9,acp.subset$sdev^2,type="b")
+```
+
+
+```{r}
+# Biplot
+biplot(acp.subset,cex=0.65)
+```
+
+
+```{r}
+#Positionnement des groupes dans le plan factoriel
+plot(acp.subset$scores[,1],acp.subset$scores[,2],
+type="n",xlim=c(-6,6),ylim=c(-6,6))
+#Etiquettes des points
+text(acp.subset$scores[,1],acp.subset$scores[,2],col=c("red","green","blue")[groupes.subset],cex=0.65,labels=rownames(fromage.subset),xlim=c(-6,6),ylim=c(-6,6))
+```
+# Autre exemple autre jeu de donnée 
+
+```{r}
+# Importation des donnees
+temperature <- read.table("C:/Users/ilias/OneDrive/Bureau/AD/temperatures_europe.csv",
+        header=TRUE, sep=";", dec=".", row.names=1, fileEncoding="latin1")
+summary(temperature)
+```
+
+
+```{r}
+#L'ACP
+res <- PCA(temperature, quanti.sup=13:16,quali.sup=17)
+```
+
+## Construction de la classification ascendante hierarchique
+
+```{r}
+# Construction de la classification ascendante hierarchique
+res.hcpc <- HCPC(res)
+```
+
+
+## Si vous utilisez Rstudio, il n'y a pas d'interactivité et vous devez lancer :
+
+```{r}
+# Si vous utilisez Rstudio, il n'y a pas d'interactivité et vous devez lancer :
+res.hcpc <- HCPC(res, graph=TRUE, nb.clust=3)
+plot(res.hcpc,choice="tree")
+plot(res.hcpc,choice="3D.map")
+plot(res.hcpc,choice="map",draw.tree=FALSE)
+```
+
+## Resultats de la classification
+
+```{r}
+# Resultats de la classification
+names(res.hcpc)
+res.hcpc$data.clust
+res.hcpc$desc.var
+res.hcpc$desc.axes
+res.hcpc$desc.ind
+```
+ 
+```{r}
+library(Factoshiny)
+```
+
+```{r}
+Factoshiny(temperature)
+```
+
+
+
+

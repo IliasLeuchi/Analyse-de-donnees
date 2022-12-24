@@ -1,0 +1,185 @@
+---
+title: "tp2"
+output: html_document
+date: "2022-10-21"
+---
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+```
+
+```{r}
+decathlon2
+```
+
+```{r}
+data(decathlon2)
+head(decathlon2)
+```
+
+```{r}
+#e les individus actifs et les variables actives pour l’ACP :
+decathlon2.active <- decathlon2[1 :23, 1 :10]
+head(decathlon2.active[, 1 :6], 4)
+```
+
+```{r}
+res.pca <- PCA(decathlon2.active, graph = FALSE)
+print(res.pca)
+```
+
+```{r}
+get_eigenvalue(res.pca)
+#Extraction des valeurs propres/variances des composantes principales.
+```
+
+```{r}
+fviz_eig(res.pca,  addlabels = TRUE, ylim = c(0, 50))
+ #Visualisation des valeurs propres.
+```
+> Ici on gardera 4 ou 5 axes. car avec les valeurs propres on voit que c'est à partir de 4 axes qu'on depasse les 80% d'inertie. 
+
+>La proportion de variance expliquée par chaque valeur propre est donnée dans la deuxième colonne. Par exemple, 4.124 divisé par 10 est égal à 0.4124, ou, environ 41.24% de la variation est expliquée par cette première valeur propre. Le pourcentage cumulé expliqué est obtenu en ajoutant les proportions successives de variances expliquées. Par exemple, 41.242% plus 18.385% sont égaux à 59.627%, et ainsi de suite. Par conséquent, environ 59.627% de la variance totale est expliquée par les deux premières valeurs propres.
+
+
+```{r}
+get_pca_ind(res.pca)
+get_pca_var(res.pca)
+```
+
+
+```{r}
+fviz_pca_ind(res.pca) #Nuage de points des individus
+fviz_pca_var(res.pca) #Cercle des correlation
+```
+
+```{r}
+fviz_pca_biplot(res.pca) #biplot en fait c'est les deux autre graph superposée
+```
+```{r}
+var <- get_pca_var(res.pca)
+var
+
+# Coordonnées
+head(var$coord)
+# Cos2 : qualité de répresentation
+head(var$cos2)
+# Contributions aux composantes principales
+head(var$contrib)
+
+```
+
+```{r}
+library("corrplot")
+corrplot(var$cos2, is.corr=FALSE)
+
+```
+
+```{r}
+# Cos2 total des variables sur Dim.1 et Dim.2
+fviz_cos2(res.pca, choice = "var", axes = 1 :2)
+```
+
+```{r}
+# Colorer en fonction du cos2 : qualité de représentation
+fviz_pca_var(res.pca, col.var = "cos2",
+gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+repel = TRUE # évite le chevauchement de texte 
+)
+```
+```{r}
+# Changer la transparence en fonction du cos2
+fviz_pca_var(res.pca, alpha.var = "cos2")
+```
+```{r}
+var$contrib #Les contribution : La somme des colonnes = 100
+```
+```{r}
+corrplot(var$contrib, is.corr=FALSE)
+
+```
+#IRIS
+
+```{r}
+head(iris)
+```
+
+```{r}
+iris.pca<-PCA(iris [, - 5], graph = FALSE) #On enleve la variable qualitative
+attach(iris.pca)
+
+iris.pca
+```
+
+
+```{r}
+fviz_pca_ind(iris.pca,
+geom.ind = "point", # Montre les points seulement (mais pas le "text")
+col.ind = iris$Species, # colorer by groups
+palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+addEllipses = TRUE, # Ellipses de concentration
+legend.title = "Groups" )
+```
+> Meme sans prendre en compte la variable qualitative, on remarque qu'elle a une influence malgres tout.
+
+#RETOUR SUR DECATHLON
+```{r}
+res.pca <- PCA(decathlon2, ind.sup = 24 :27,quanti.sup = 11 :12, quali.sup = 13, graph=FALSE)
+
+```
+
+
+```{r}
+fviz_pca_var(res.pca)
+
+```
+```{r}
+# Changer la couleur des variables
+fviz_pca_var(res.pca,
+col.var = "black", # Variables actives
+col.quanti = "red" # variables quantitatives supl.
+)
+# Cacher les variables actives sur le graphique,
+# ne montrent que des variables supplémentaires
+fviz_pca_var(res.pca, invisible = "var")
+# Cacher les variables supplémentaires
+fviz_pca_var(res.pca, invisible = "quanti.sup")
+
+```
+```{r}
+# Graphique des variables actives
+p <- fviz_pca_var(res.pca, invisible = "quanti.sup")
+# Ajouter des variables actives supplémentaires
+fviz_add(p, res.pca$quanti.sup$coord,
+geom = c("arrow", "text"),
+color = "red")
+
+```
+
+```{r}
+p <- fviz_pca_ind(res.pca, col.ind.sup = "blue", repel = TRUE)
+p <- fviz_add(p, res.pca$quali.sup$coord, color = "red")
+p
+ 
+
+```
+
+
+
+```{r}
+fviz_pca_ind(res.pca, habillage = 13,
+addEllipses =TRUE, ellipse.type = "confidence",
+palette = "jco", repel = TRUE)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+

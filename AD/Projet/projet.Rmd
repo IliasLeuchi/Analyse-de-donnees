@@ -1,0 +1,252 @@
+---
+output:
+  pdf_document:
+    extra_dependencies : ["float"]
+---
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(car)
+library(MASS)
+library(ggpubr)
+library(lattice)
+library(corrplot)
+library("FactoMineR")
+library("factoextra")
+library(ca)
+```
+
+# Projet personnel : CSP et la principale source d’information
+
+Nous étudirons la relation entre la catégorie socio-professionnelle (CSP) et la principale source d'information sur les problèmes d'environnement. Sept CSP sont étudiées : 
+
+agriculteur (AGRI),
+
+cadre supérieur (CSUP), 
+
+cadre moyen (CMOY), 
+
+employé (EMPL), 
+
+ouvrier (OUVR), 
+
+retraité (RETR), 
+
+chômeur (CHOM).
+
+Les 1283 personnes interrogées devaient indiquer leur principale source d'information sur les problèmes d'environnement, parmi les six sources suivantes : 
+
+télévision (TEL), 
+
+journaux (JOU), 
+
+radio (RAD), 
+
+livres (LIV), 
+
+associations (ASS) ,
+
+mairie (MAI).
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+media = read.csv2("media.csv", row.names=1)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(media, caption = "Tableau de contingence")
+```
+
+Voici le jeu de données à notre disposition pour menez notre analyse. Il s'agit d'un tableau des effectifs croisée entre les deux variables que nous étudions. On appprend par exemple que 181 ouvriers ont comme principale source d'information sur les problèmes d'environnement la télévision.
+
+\newpage
+
+## Indépendance 
+
+Avant de commencer à analyser nos données on vérifie si il y a un lien entre nos deux variables. Pour cela on réalise un test d'indépendance du $\chi^2$.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+media_sm = media[-8,-7]
+```
+
+```{r, warning=FALSE, echo=FALSE}
+chisq.test(media_sm)
+```
+
+On trouve un pvaleur très proche de 0, on rejette donc l'hypothèse d'indépendance, il y a un lien entre la socio-professionnelle et la principale source d'information sur les problèmes d'environnement. Une AFC est donc légitime.
+
+
+## Analyse Factorielle des Correspondances
+
+
+Nous allons donc réaliser l'AFC sur nos données.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.ca <- CA (media_sm, graph = FALSE)
+row <- get_ca_row(res.ca)
+col <- get_ca_col(res.ca)
+```
+
+
+
+
+## Valeurs propres
+
+On cherche d'abord combien de dimension nous allons garder pour représenter au mieu nos données. 
+
+```{r message=FALSE,echo=FALSE}
+#Les valeurs propres correspondent à la quantité d’informations retenue par chaque axe
+
+eig.val <- get_eigenvalue (res.ca)
+kable(round(eig.val,3), caption = "Valeurs propres" ) 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visulation des valeurs prorpes"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 85))+ geom_hline (yintercept = 33.33, linetype = 2,
+color = "red")
+
+#droite en pointillée rouge spécifiant la valeur propre moyenne
+```
+
+
+Dans le tableau on voit que les deux premiers axes expliquent 93.1% de la variance totale. C’est un pourcentage très acceptable. Avec le graphique on voit que les dimensions 1 et 2 expliquent environ 75.% et 18% de l’inertie totale, respectivement. On décide donc de retenir ces deux axes.
+
+\newpage
+
+## Catégorie socio-professionnelle
+
+On commence par étudier la variable CSP.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+row$coord
+row$cos2
+row$contrib
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visulation des contrivutions des CSP sur le premier plan"}
+fviz_contrib (res.ca, choice = "row", axes = 1 :2)
+# Contribution totale aux dimensions 1 et 2
+```
+
+
+On cherche à savoir quelle catégorie socio-professionnelle contribue le plus au premier plan. Avec le diagramme en bar ci-dessus, on voit les différentes contributions pour chaque catégorie. La ligne poitillée rouge correspond à la contribution moyenne, toutes les variables au dessus de cette ligne peuvent être considérer comme fortement contribuante au premier plan. On retient donc les agriculteurs, la classe suppérieur, les retraiters, et la catégorie la plus contribuante, la classe moyenne qui à la meilleur contribution au premier plan.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(round(row$coord[,1:2] , 3) , caption = "Coordonnées des CSP sur le premier plan")
+```
+
+
+
+Avant de représenter le nuage des CSP, on regarde les coordonées de chaque catégories sur le premier plan. Tous les individus avec une coordonnée négative sur la dimension 1, serons dans la partie gauche du graphique, et inversement pour les coordonnées positive. Et Tous les individus avec une coordonnée négative sur la dimension 2, serons dans la partie basse du graphique, et inversement pour les coordonnées positive. Par exemple les agriculteurs seront dans la partie haute gauche du graphique.
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Nuage des CSP sur le premier plan"}
+#nuage des CSP
+fviz_ca_row (res.ca,
+             shape.row = 15,
+             col.row = "contrib",
+             gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)
+```
+
+On peut ensuite tracer le nuage des catégorie socio-professionnelle. Ici il y a une couleur selon la contribution, plus la contribution au premier plan et grande, plus la, couleur sera chaude. On retrouve donc la classe moyenne avec la couleur la plus chaude car comme nous venons de le voir c'est la catégorie qui contribue le plus à ce plan. 
+
+ici on remarque que la classe moyenne et la classe suppérieur sont regroupées, sela signifie qu'ils ont un profil similaire. A l'inverse les catégories qui s'opose vont etre corrélée négativement. Par exemple les employés et les agriculteurs ont ici des profils qui s'oppose mais cela reste léger.
+
+\newpage
+
+## Source d'information
+
+On s'interesse maintenant à la deuxième variable de nos données.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+col$coord
+col$cos2
+col$contrib
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visulation des contributions des sources d'information"}
+fviz_contrib(res.ca, choice = "col", axes = 1 :2)
+# Contribution totale aux dimensions 1 et 2
+```
+
+On commence avec les contributions sur le premier plan. On voit avec le graphique que deux sources d'information on une contributions suppérieur à la contribution moyenne. Ce sont la télévision et les livres, ce seront donc ces deux modalités qui contriburons le plus au premier plan.
+
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(col$coord[,1:2] , 3) , caption = "Coordonnées des sources d'information sur le premier plan")
+```
+
+Avant de représenter le nuage des source d'information, on regarde les coordonées de chaque source sur le premier plan. Tous les individus avec une coordonnée négative sur la dimension 1, serons dans la partie gauche du graphique, et inversement pour les coordonnées positive. Et Tous les individus avec une coordonnée négative sur la dimension 2, serons dans la partie basse du graphique, et inversement pour les coordonnées positive. Par exemple la télévision sera dans la partie basse gauche du nuage.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Nuage des sources d'informations"}
+fviz_ca_col (res.ca,
+             shape.row = 15,
+             col.col = "contrib",
+             gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)
+
+```
+
+On peut ensuite tracer le nuage des sources d'informations. Comme pour le nuage précedent,  il y a une couleur selon la contribution, plus la contribution au premier plan et grande, plus la couleur sera chaude. On retrouve donc la télévision et les livres avec les contributions les plus élevés.
+
+Ici il n y pas de groupe qui se forme, donc aucune source d'informations a un profil similaire. Il y a quelque oppossition, comme la télévision et les associations, donc les profils de ses deux sources d'information s'oppose, mais cela n'est pas net. 
+
+\newpage
+
+## CSP et source d'information
+
+On peut mainteant croiser les deux variables pour voir les liens et les dissimilarités.
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Graphe superposé"}
+fviz_ca_biplot (res.ca,repel = TRUE)
+```
+
+Pour cela on supperpose les deux nuages. Les CSP sont représentées par des points bleus et des sources d'information par des triangles rouges.
+
+On remarque que les modalités sont disposées en arc de cercle. Ce phénomène est connu sous le nom d'effet Guttman. Il y a donc un ordre sous-tend les modalités. On voit que la classe moyenne et la classe suppérieur sont fortement liée qu livre, les employés aux journaux, les ouviers et retraités au la télévision, les chomeurs aux radios, et les agriculteurs au mairie. 
+
+Pour aller plus loin, on imagine avec ces résultats que le coût d'une source d'information à un impact. En effet on remarque que les sources d'information gratuite comme la télévision, la radio et la mairie, vont être associée au catégorie social les plus modestes. Tandis que les livres et les journaux, des sources d'informations payante vont plutot être lier au catégorie les plus aisés.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Factoshiny::Factoshiny(media)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

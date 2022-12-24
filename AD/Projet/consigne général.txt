@@ -1,0 +1,14 @@
+Bonjour,
+Voici votre sujet individuel : mini projet personnel sur l’Analyse des Données.
+
+Il faut rendre une version électronique, avec :
+  -- Rapport_Nom.pdf : contenant les CR des devoirs des TP et le mini-projet joint
+  -- CodesR_Nom.R (ou R Markdown)
+(A RENDRE LE 14/12 23:59)
+Bon courage,
+
+Prof. Mustapha RACHDI
+
+PS. Toute question concernant le mini projet doit être formulée lors des seances de TP.
+
+Bien cordialement,
