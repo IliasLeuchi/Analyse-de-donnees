@@ -1,0 +1,448 @@
+---
+title: "AFC"
+author: "LEUCHI Ilias"
+date: "2022-12-03"
+output: html_document
+---
+
+L’AFC permet de résumer et de visualiser l’information contenue dans le tableau de contingence formé par les deux variables catégorielles. Le tableau de contingence
+contient les fréquences formées par les deux variables.
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+```
+
+#Donnée 
+
+```{r}
+data(housetasks)
+#head(housetasks)
+```
+
+
+```{r}
+library("gplots")
+# 1. convertir les données en tant que table
+dt <- as.table(as.matrix (housetasks))
+# 2. Graphique
+balloonplot(t (dt), main = "housetasks", xlab = "", ylab = "", label =
+FALSE, show.margins = FALSE)
+#show.margins = .... : voir les marges ou non
+```
+
+```{r}
+# Pour un petit tableau de contingence, vous pouvez utiliser le test de chi2 pour évaluer s’il existe une dépendance significative entre les catégories des lignes et des colonnes
+
+chisq <- chisq.test (housetasks)
+chisq
+
+#Dans notre exemple, les variables de ligne et de colonne sont statistiquement significativement associées
+```
+
+
+
+```{r}
+#AFC 
+res.ca <- CA (housetasks, graph = FALSE)
+```
+
+# Valeur propre 
+
+```{r}
+#Les valeurs propres correspondent à la quantité d’informations retenue par chaque axe
+
+eig.val <- get_eigenvalue (res.ca)
+eig.val
+```
+
+
+
+```{r}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 50))+ geom_hline (yintercept = 33.33, linetype = 2,
+color = "red")
+
+#droite en pointillée rouge spécifiant la valeur propre moyenne
+```
+
+les deux premiers axes expliquent 88.6% de la variance totale. C’est un pourcentage acceptable. Les dimensions 1 et 2 expliquent environ 48, 7% et 39, 9% de l’inertie totale, respectivement. Cela correspond à un total cumulé de 88, 6% de l’inertie totale retenue par les 2 dimensions.
+
+
+
+# Analyse des lignes
+
+```{r}
+row <- get_ca_row(res.ca)
+```
+
+
+```{r}
+# Coordonnées
+row$coord
+```
+
+
+
+
+```{r}
+# Cos2 : qualité de représentation
+row$cos2
+
+#Les valeurs de cos2 sont comprises entre 0 et 1. La somme des cos2 pour les lignes sur toutes les dimensions de l’AFC estégale à 1.
+
+#Si un point ligne est bien représenté par deux dimensions, la somme des cos2 est proche de 1. Pour certainséléments lignes, plus de 2 dimensions sont nécessaires pour représenter parfaitement les données.
+```
+
+
+```{r}
+#visualier le cos2 des points lignes sur toutes les dimensions
+library("corrplot")
+corrplot(row$cos2, is.corr = FALSE)
+```
+
+
+```{r}
+# bar plot du cos2 des lignes 
+fviz_cos2(res.ca, choice = "row", axes = 1 :2) ## Cos2 des lignes sur Dim.1 et Dim.2
+```
+
+
+```{r}
+# Contributions
+row$contrib
+
+#Les lignes qui contribuent le plus à Dim.1 et Dim.2 sont les plus importantes pour expliquer la variabilité dans le jeu de données.
+
+#Les lignes qui ne contribuent pas beaucoup à aucune dimension ou qui contribuent aux dernières dimensions sont moins importantes.
+```
+
+```{r}
+#mettre enévidence les points lignes les plus contributifs pour chaque dimension
+corrplot(row$contrib, is.corr=FALSE)
+```
+
+```{r}
+#bar plot des contributions des lignes
+
+fviz_contrib(res.ca, choice = "row", axes = 1, top = 10)
+# Contributions des lignes à la dimension 1
+
+fviz_contrib(res.ca, choice = "row", axes = 2, top = 10)
+# Contributions des lignes à la dimension 2
+
+fviz_contrib (res.ca, choice = "row", axes = 1 :2, top = 10)
+# Contribution totale aux dimensions 1 et 2
+
+
+#top = ...  : écider de ne montrer que les lignes les plus contributives
+```
+
+On peut voir que : les lignes Repairs, Laundry, Main_meal et Driving sont les
+plus importants dans la définition de la première dimension. Les lignes Holidays
+et Repairs contribuent le plus à la dimension 2.
+
+
+
+
+```{r}
+#montre les relations entre les points lignes :
+fviz_ca_row (res.ca,
+             shape.row = 15,
+             col.row = "cos2",
+             gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)
+
+
+#shape.row= ... : modifier la forme des points
+# col.row = "cos2" :  colorer les points lignes par leurs cos2
+#col.row = "contrib" : colorer les points lignes par leurs contribution
+#alpha.row = "cos2" :  modifier la transparence des points lignes en fonction de leurs cos2 
+#alpha.row = "contrib" :  modifier la transparence des points lignes en fonction de leurs contribution 
+
+
+```
+— Les lignes avec un profil similaire sont regroupées.
+— Les lignes corrélées négativement sont positionnées sur des côtés opposés de l’origine de du graphique 
+—La distance entre les points lignes et l’origine mesure la qualité des points
+lignes sur le graphique. Les points lignes qui sont loin de l’origine sont bien
+représentés sur le graphique.
+
+
+
+# Analyse des colonnes 
+
+```{r}
+col <- get_ca_col(res.ca)
+```
+
+```{r}
+# Coordonnées
+head(col$coord)
+```
+
+
+```{r}
+# Qualité de représentation
+head(col$cos2)
+fviz_cos2 (res.ca, choice = "col", axes = 1 :2)
+```
+
+
+```{r}
+# Contributions
+head(col$contrib)
+fviz_contrib (res.ca, choice = "col", axes = 1 :2)
+```
+
+
+
+```{r}
+fviz_ca_col (res.ca, col.col = "cos2",
+gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE)
+```
+
+# Ligne X Colonnes 
+
+```{r}
+#Biplot symétrique.
+fviz_ca_biplot (res.ca,repel = TRUE)
+
+# repel = TRUE : pour éviter le chevauchement de texte
+
+#map = "symbiplot" : Biplot symétrique. Ne conserve pas les métriques des lignes et des colonnes.
+```
+
+
+```{r}
+#n biplot asymétrique 
+
+fviz_ca_biplot (res.ca, map = "rowprincipal", arrow = c(TRUE, TRUE),
+repel = TRUE)
+
+
+#arrow = c(...,...) = fleche ou non
+
+
+#  Biplots asymétriques :
+# map = "rowprincipal" : les colonnes sont représentées dans l’espace des lignes
+#map = "colprincipal" : les lignes sont représentées dans l’espace des colonnes
+
+
+
+# graphiques asymétriques proposés par Gabriel & Odorof : 
+# map = "rowgab" : Les lignes en coordonnées principales et les colonnes en coordonnées standard multipliées par la masse.
+#map = "colgab" : Les colonnes en coordonnées principales et les lignes en coordonnées standard multipliées par la masse. (bitplot des contribution colonne)
+
+```
+```{r}
+fviz_ca_biplot (res.ca, map = "colgreen", arrow = c (TRUE, FALSE), repel
+= TRUE)
+
+
+#map ="rowgreen" : Les lignes en coordonnées principales et les colonnes en coordonnées standard multipliées par la racine carrée de la masse. (bitplot des contribution ligne)
+
+#map ="colgreen" : Les colonnes en coordonnées principales et les lignes dans les coordonnées standard multipliées par la racine carrée de la masse.
+
+#Dans notre exemple, nous allons interpréter la contribution des lignes. L’argument     map = "colgreen" est utilisé.
+```
+
+Les lignes sont représentées par des points bleus et des colonnes par des triangles rouges.
+
+Biplot symétrique :
+Seule la distance entre les points lignes ou la distance entre les points colonnes peut
+être vraiment interprétée.
+la distance entre les lignes et les colonnes ne peut pas être interprétée. Seules des conclusions générales peuvent être tirées.
+
+biplot asymétrique :
+pour interpréter la distance entre les points colonnes et les points lignes. Cela
+signifie que les profils des colonnes doivent être représentés dans l’espace des
+lignes ou vice versa.
+
+
+Bitplot des contributions :
+les points qui contribuent très peu à la solution sont proches du centre du biplot et sont relativement peu importants pour l’interprétation. Vous devez décider si vous voulez analyser les contributions des lignes ou de celles des colonnes.
+
+
+
+La distance entre les points lignes ou entre les points colonnes donne une mesure
+de leur similitude (ou dissemblance). Les points lignes avec un profil similaire sont
+proches sur le graphique. Il en va de même pour les points colonnes.
+
+exemple bitplot sysmetrique :
+— Les lignes Dinner, Breakfeast et Laundry sont associées le le plus à la colonne
+“Wife”
+
+— Les lignes Driving et Repairs sont associées le plus à la colonne “Husband”
+
+
+exemple bitplot des contribution :
+
+—  Il est évident que la ligne Repairs a une contribution importante au pôle positif
+de la première dimension, tandis que les lignes Laundry et Main_meal ont une contribution majeure au pôle négatif de la première dimension.
+
+— La dimension 2 est principalement définie par la ligne Holidays.
+
+— La ligne Driving contribue aux deux axes de manière identique.
+
+Si les modalités sont disposées en arc de cercle. Ce phénomène est connu sous le nom d'effet Guttman. Il apparaît quand un ordre sous-tend les modalités.
+
+# Description des dimensions
+
+```{r}
+#Pour identifier facilement les lignes et les colonnes les plus associées aux axes principaux
+res.desc <- dimdesc(res.ca, axes = c(1, 2))
+```
+
+
+```{r}
+# Description de la dimension 1 :
+
+res.desc[[1]]$row #par les lignes
+res.desc[[1]]$col #par les colonnes
+```
+
+
+```{r}
+# Description de la dimension 2 :
+
+res.desc[[2]]$row #par les lignes
+res.desc[[2]]$col #par les colonnes
+```
+
+
+
+# Gestion des éléments supplémentaires
+
+Nous utiliserons le jeu de données children
+```{r}
+data(children)
+# head(children)
+```
+
+
+
+```{r}
+res.ca <- CA (children, row.sup = 15 :18, col.sup = 6 :8, graph = FALSE)
+
+#row.sup : un vecteur numérique spécifiant les positions des lignes supplémentaires dans le tableau.
+
+#col.sup : un vecteur numérique spécifiant les positions des colonnes supplémentaires.
+
+# ncp : nombre de dimensions conservées dans le résultat final.
+
+#graph : une valeur logique. Si TRUE le graphique est montré.
+```
+
+
+```{r}
+#Biplot des lignes et des colonnes.
+
+fviz_ca_biplot (res.ca, repel = TRUE)
+
+#invisible = c("row.sup", "col.sup") : masquer les lignes et les colonnes supplémentaires 
+```
+
+— Les lignes actives sont en bleu
+— Les lignes supplémentaires sont en bleu foncé
+— Les colonnes sont en rouge
+— Les colonnes complémentaires sont en noir
+
+
+
+
+```{r}
+#Résultats prédits (coordonnées et cos2) pour les lignes supplémentaires :
+res.ca$row.sup
+
+#Graphique des lignes actives et supplémentaires :
+fviz_ca_row(res.ca, repel = TRUE)
+```
+
+
+
+```{r}
+#Résultats prédits (coordonnées et cos2) pour les colonnes supplémentaires :
+res.ca$col.sup
+
+#Graphique des colonnes actives et supplémentaires :
+fviz_ca_col(res.ca, repel= TRUE)
+```
+
+# Filtrer les résultats
+
+Si vous avez beaucoup de lignes/colonnes, il est possible de visualiser seulement certaines d’entre elles en utilisant les arguments select.row et select.col.
+
+exemple :
+```{r}
+# Visualiser les lignes avec cos2> = 0.8
+fviz_ca_row (res.ca, select.row = list(cos2 = 0.8))
+
+
+# Top 5 lignes actives et top 4 lignes suppl. avec le cos2 le plusélevé
+fviz_ca_row (res.ca, select.row = list(cos2 = 5))
+
+
+# Sélectionner par noms
+name <- list(name = c("employment", "fear", "future"))
+fviz_ca_row(res.ca, select.row = name)
+
+
+# Top 5 des lignes et des colonnes les plus contributives
+fviz_ca_biplot(res.ca, select.row = list(contrib = 5), select.col = list(contrib
+= 5)) + theme_minimal()
+```
+
+# Outliers
+
+Si un ou plusieurs “outliers” (valeurs atypiques ou aberrantes) sont présents dans le tableau de contingence, ils peuvent dominer l’interprétation des axes (M. Bendixen, 2003).
+
+Les valeurs aberrantes sont des points qui ont des coordonnées et des contributions très élevées en valeur absolue. Sur le graphique, elles sont très loin de l’origine. Dans ce cas,les points lignes et colonnes restants ont tendance à être étroitement regroupés dans le graphique, lequel devient difficile à interpréter.
+
+Il n’y a pas de valeurs aberrantes apparentes dans nos données. S’il y avait des valeurs
+aberrantes dans les données, elles doivent être supprimées ou traitées comme des points
+supplémentaires lors de l’AFC.
+
+
+
+# Exportation des résultats
+
+Exporter les graphiques en PDF/PNG. Pour enregistrer les différents graphiques
+en fichiers pdf ou png, nous commençons par créer des graphiques d’intérêt en tant
+qu’objet R :
+```{r}
+# Scree plot
+scree.plot <- fviz_eig(res.ca)
+# Biplot des lignes et colonnes
+biplot.ca <- fviz_ca_biplot (res.ca)
+```
+
+
+Ensuite, les graphiques peuvent être exportées dans un seul fichier pdf comme suit
+(un graphique par page) :
+```{r}
+library(ggpubr)
+
+ggexport(plotlist = list(scree.plot, biplot.ca), filename = "CA.pdf")
+
+#Plus d’options au Chapitre Analyse en composantes principales (section : exportation des résultats).
+```
+
+
+Exporter les résultats vers les fichiers txt/csv :
+```{r}
+# Exporter vers un fichier TXT
+write.infile (res.ca, "ca.txt", sep = "")!
+# Exporter vers un fichier CSV
+write.infile (res.ca, "ca.csv", sep = " ;")
+```
+
+
+
+
+
+
+
+
+
+
+

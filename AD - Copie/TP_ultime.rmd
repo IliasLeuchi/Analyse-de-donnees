@@ -1,0 +1,2294 @@
+---
+title : "Rapport d'Analyse de données"
+author : "LEUCHI Ilias"
+output:
+  pdf_document:
+    toc : true
+    extra_dependencies : ["float"]
+---
+
+\newpage
+\tableofcontents
+\newpage
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(car)
+library(MASS)
+library(ggpubr)
+library(lattice)
+library(corrplot)
+library("FactoMineR")
+library("factoextra")
+library(ca)
+```
+
+# Chapitre 1 : Prise en main et algèbre
+
+## Exercice 13
+
+Un échantillon de dossiers d’enfants a été saisi. Ce sont des enfants vus lors d’une visite en 1ère section de maternelle en 1996-1997 dans des écoles de Bordeaux (Gironde, France). L’échantillon est constitué de 152 enfants âgés de 3 ou 4 ans. Nous Considérons le jeu de donnée Poids-Naissance. Il s’agit ici d’expliquer la variabilité du poids de naissance de l’enfant en fonction des caractéristiques de la mère, de ses antécédents et de son comportement pendant la grossesse. La variable à expliquer est le poids de naissance de l’enfant (variable quantitative BWT, exprimée en grammes) et les facteurs étudiés (variables explicatives) sont : Age de la mère, Poids de la mère lors du dernier cycle menstruel, “Race” de la mère, Tabagisme durant la grossesse, Nombre d’antécédents de prematurité, Antécédents d’hypertension, Présence d’irritabilité utérine, Nombre de visites à un médecin durant le premier trimestre de la grossesse, Poids de naissance et Poids de naissance inférieur ou égal à 2500 g.
+
+```{r message=FALSE,echo=FALSE}
+data=read.csv("C:/Users/ilias/OneDrive/Bureau/AD/Poids_naissance.txt", sep=";")
+
+attach(data)
+
+kable(head(data),caption = "Extrait des données Poids Naissance")
+ 
+#Matrice des données
+```
+
+Le tableau 1 est un court extrait du jeu de données. Ici la variable LWT, qui correspond au poids de la mère, est exprimé en livres, nous la modifions donc pour l’avoir en kilogrammes.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data$LWT = round(data$LWT*0.45359237,3)  #transforme le poids de la mama en Kg
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(data), caption = "Extrait des données avec chagement d'unité du poids de la mère")
+```
+
+Nous obtenons le jeu de données du tableau 2.
+
+Réalisons maintenant quelque tri à plats avec ces données.
+
+
+```{r message=FALSE,echo=FALSE}
+decoup_age =cut(AGE, breaks =5)
+kable(table(decoup_age), caption = "Tri à plat de l'age de la mère"
+      ,col.names = c("classes","effectif"))
+```
+
+Avec l'age de la mère, On remarque dans le tableau 3 que 74 des enfants de nos données ont une mère agé entre 20 et 26 ans. 
+
+```{r message=FALSE,echo=FALSE}
+decoup_LWT = cut(data$LWT, breaks = 5)
+kable(table(decoup_LWT), caption = "Tri à plat du poids de la mère",
+      col.names = c("classes","effectif"))
+```
+
+Le tableau 4 nous apprend que 88 mère des enfants de nos données, ont un poid qui se situe entre 51.7 et 67.1 kg.
+
+```{r message=FALSE,echo=FALSE}
+#Recodage de la variabe Race
+RACE = factor(RACE)
+levels(RACE)=c("Blanche","Noir","Autre")
+kable(table(RACE), caption = "Tri à plat de la race de l'enfant",
+      col.names = c("","Effectif"))
+```
+
+Le tableau 5 nous indique que 96 enfants des données on une race dite "Blanche".
+
+```{r message=FALSE,echo=FALSE}
+SMOKE=factor(SMOKE)
+levels(SMOKE)=c("Non", "Oui")
+kable(table(SMOKE), 
+      caption = "Tri à plat du tabagisme durant la grossesse",
+      col.names = c("","effectif"))
+```
+Et pour finir 115 enfants de nos données, avais une mère qui fumé durant sa grossessesse, comme nous indique le tableau 6.
+
+## Exercice 14
+
+Nous allons crée un jeu de donnée personnel, l'objectif sera de voir les manipulation possible sur des données.
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+Mort.a <- c(93,53,72,68,68,53)
+Années.de.carrière <- c(66,25,48,37,31,32)
+Nombre.de.films <- c(211,58,98,140,74,81)
+Prénom <- c("Michel", 
+            "André",
+            "Jean" ,
+            "Louis" ,
+            "Lino",
+            "Jacques")
+
+Nom <- c(
+          "Galabru"   ,
+          "Raimbourg",
+          "Gabin",
+          "De Funès",
+          "Ventura" ,
+          "Villeret")
+
+Date.du.deces <- c("04-01-2016",
+                    "23-09-1970",
+                    "15-10-1976",
+                    "27-01-1983",
+                    "22-10-1987",
+                    "28-01-2005")
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+acteur=data.frame(Mort.a,Années.de.carrière, Nombre.de.films,Prénom,Nom,Date.du.deces ) 
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(acteur,caption = "Jeu de données acteur") #7
+```
+
+Le tableau 7 nous illustre le jeu de données. Chaque individu correspond à un acteur ou on retrouve son nom, prenom, son nombre d'année de carriere, son nombre de de film, et la date de sa mort avec l'age.
+ 
+```{r message=FALSE,echo=FALSE}
+kable(acteur[4], caption = "Prénom du jeu de données acteur") #8
+```
+
+Nous pouvons aussi extraire une colonne en particulier, dans le tableau 8 c’est « prénom » qui est extrait.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+colnames(acteur)[1] = c("Age.du.décès")
+acteur
+```
+ 
+```{r message=FALSE,echo=FALSE}
+kable(acteur[order(acteur$Age.du.décès),], 
+      caption = "Donnée acteur trié par l'age du décès") #9
+```
+
+Nous modifions ensuite le nom de la colonne « Mort.à » , en « Age.du.décès », comme le montre le tableau  9. Et pour finir, nous pouvons ordonner le jeu de donnée selon une conditions. Ici nous voulons ordonner par « Age.du.décès » croissant, ce qui est fait dans le tableau 9 .
+
+## Exercice 15
+
+Le goût d’un fromage dépend de la concentration de plusieurs composés
+chimiques, dont :
+la concentration d’acide acétique (variable X1), la concentration d’hydrogène sulfuré (variable X2), la concentration d’acide lactique (variable X3).
+
+Pour 30 types de fromage, on dispose du score moyen attribué par des goûteurs (caractère Y ).
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+w =read.delim("C:/Users/ilias/OneDrive/Bureau/AD/fromage.txt")
+
+attach(w)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(w), caption = "Extrait du jeu de donnée fromage") #10
+```
+
+Voici un extrait des données représenté dans le tableau 10 .
+On retrouve bien un total de 30 individus qui corresponde à des types de fromage. Il bien les 4 variables toute quantitatives. Il y a X1, X2, X3, et Y.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+X1
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+dim(w)
+str(w)
+attributes(w)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(summary(w),
+      caption = "Statistiques élémentaires des données fromage") #11
+```
+
+tableau 11 nous montre les statistiques élémentaire pour chacune des variables. Par exemple pour Y on trouve une valeur moyenne de 24,53, un minimum de 0.7 et un maximum de 57.20.
+Matrice des nuages de points
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Ozone en fonction des saisons"}
+pairs(w, main= "Matrice des nuages de points", cex.main =1)
+```
+
+La figure 1 représente la Matrice de nuage de point entre chacune des variables. Ce sont les nuages de points des croisements deux à deux entre chaque variables de nos données. 
+
+```{r message=FALSE,echo=FALSE}
+ww<- w[X1 > 5.1 & X3 < 1.77,]
+kable(head(ww), caption = "Extrait des données fromage filtré") #12
+```
+
+Nous allons maintenant crée avec sous jeu de données avec les contraintes suivante X1 > 5.1 et X3 < 1.77. C’est ce qui est représenté dans le tableau 12 .
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+dim(ww)
+str(ww)
+attributes(ww)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(summary(ww),
+      caption = "Statistiques élémentaires des données fromage filtrées") #13
+```
+
+Apres ce changement on trouve certaine valeur différentes des statistiques élémentaire, par exemple la moyenne de Y est maintenant de 23,52. Nous voyons les nouvelles statistiques dans le tableau 13.
+
+## Exercice 16
+
+Les données que utiliserons sont directement implanté dan R, il s’agit des données « airquality ».
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data = airquality
+#?airquality
+attach(data)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(data), caption = "Extrait des données airquality") #14
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+names(data)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+dim(data)
+```
+
+Le tableau 14 nous montre un extrait des données.
+Il s’agit des relevés quotidiens des valeurs de qualité de l'air suivantes du 1er mai 1973 au 30 septembre 1973. Il y a 153 individus pour 6 variables.
+
+•	Ozone : Ozone moyen en parties par milliard de 1300 à 1500 heures à Roosevelt Island.
+
+•	R. solaire : rayonnement solaire à Langley dans la bande de fréquence 4000-7700 Angstroms de 0800 à 1200 heures à Central Park.
+
+•	Wind : Vitesse moyenne du vent en miles par heure à 0700 et 1000 heures à l'aéroport de LaGuardia.
+
+•	Temp : Température maximale quotidienne en degrés Fahrenheit à l'aéroport de La Guardia.
+
+•	Day : Le jour
+
+Les données ont été obtenues auprès du New York State Department of Conservation (données sur l'ozone) et du National Weather Service (données météorologiques).
+
+
+```{r message=FALSE,echo=FALSE}
+kable(summary(data[1:4]), 
+      caption = "Statistique élémentaire des données airquality") #15
+```
+
+Le tableau 15 nous montre les statistiques élémentaires sur nos variables quantitatives, ainsi que les valeur manquante. Pour la variable ozone on remarque 37 valeurs manquante et une moyenne de 42.13.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "boîte à moustaches de l’Ozone pour chaque mois"}
+plot(Ozone~factor(Month),col=c(2:6),
+     main="boîte à moustaches de la variable Ozone pour chaque mois"
+     ,cex.main = 1,xlab = "Mois" )
+```
+
+On remarque, grâce à la figure 2, des diagrammes à moustache avec une tendance similaire pour les mois 5, 6, et 9, avec des valeur de l’ozone peu élevé qui varie mois. Alors que pour les mois 7 et 8, la valeur de l’ozone sont plus forte et beaucoup plus répartie.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data$saison =factor(Month)
+levels(data$saison )
+levels(data$saison)[5]="automne"
+levels(data$saison)[1] ="printemps"
+levels(data$saison)[2:4]="été"
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(data), 
+      caption = "Extrait des données airquality avec la saison") #16
+```
+
+Pour notre analyse, nous rajoutons une variable saison. Le tableau 16 montre nos nouvelle données.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Ozone en fonction des saisons"}
+scatterplot(Ozone~Temp|saison, data = data, 
+            regLine =FALSE, grid =F,smooth = FALSE, legend = FALSE,
+            main ="Ozone en fonction des saisons", cex.main =1,
+            col=c("blue","green","red"),pch=c(3,2,1),xlab = "Temps")
+
+legend("topleft",levels(data$saison),cex=.8,col=c("blue","green","red"),pch=c(3,2,1), text.font=4)
+
+```
+
+Avec la figure 3 on remarque qu’il y a une relation positive linéaire croissante entre chaque l’ozone et le temps. Cette relation est présente pour chacune des saisons. Le temps est plus élevé en été et plus faible en hiver. Et comme vu précédemment avec la figure 2, la concentration d’Ozone est plus forte en été, qui correspond aux mois 7 et 8.
+
+\newpage
+## Exercice 17
+
+Nous nous intéressons à la fonctions suivant yi = 1.7+2.1 i + ei , i entre 1 et 100 et les ei suivant une lois N(0,5²).
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+ech = rnorm(100,1,5)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+i =1:100
+yi = function(i,ech) {1.7+2.1*i + ech}
+```
+
+```{r message=FALSE,echo=FALSE, , fig.cap= "Nuage de points des yi en fonction de i"}
+#scatterplot(i~yi(i,ech), regLine= TRUE, boxplot= F,smooth = FALSE)
+
+plot(yi(i,ech)~i,pch= 3, col="blue"
+     ,main = "nuage de points des yi en fonction de i", ylab = "yi", cex.main = 1)
+abline(lm(yi(i,ech)~i), col = "red")
+```
+
+La figure 4 nous montre le nuage de points généré avec notre fonction, avec la droite de régression. Cette droite semble être une bon ajustement de notre fonction.
+
+
+## Exercice 18
+
+On considère un tableau de contingence obtenu en ventilant 592 femmes suivant la couleur de leurs yeux et la couleur de leurs cheveux.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+colCheveaux<-c(rep("brun",68+15+5+20),
+               rep("chatin",119+54+29+84),
+               rep("roux",26+14+14+17),
+               rep("blond",7+10+16+94))
+```
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+colYeux<-c(rep("marron",68),rep("noissette", 15), rep("vert",5),rep("bleu",20),
+           rep("marron",119),rep("noissette", 54), rep("vert",29),rep("bleu",84),
+           rep("marron",26),rep("noissette", 14), rep("vert",14),rep("bleu",17),
+           rep("marron",7),rep("noissette", 10), rep("vert",16),rep("bleu",94))
+
+```
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+femme =data.frame(colCheveaux,colYeux)
+```
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+n =length(femme[,2])
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#Tableau des effectifs croisés (de contingence)
+TEC=table(femme$colYeux,femme$colCheveaux)
+kable(TEC, caption = "Tableau de contingence du croisement entre couleur des yeux et des cheuveux") #17
+
+```
+
+Le tableau 17 illustre ce tableau de contingence. On apprend par exemple que 94 femmes de nos données sont blonde au yeux bleu.
+
+```{r message=FALSE,echo=FALSE}
+#Tableau des frequence croisés
+TFC=round(prop.table(table(femme$colYeux,femme$colCheveaux)),2)*100
+kable(TFC, caption = " matrice des fréquences du croisement entre couleur des yeux et des cheuveux en pourcent") #18
+```
+
+Et voici la matrice des fréquences de nos données dans le tableau 18. On remarque que 11% des femmes de nos données sont brune au yeux marrons.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#lois marginales de la couleur des yeux
+c =addmargins(TEC, FUN = sum)[-5,5]
+c
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#lois marginales de la couleur des cheveux
+r=addmargins(TEC, FUN = sum)[5,-5]
+```
+
+
+```{r echo=FALSE, message=FALSE}
+kable(addmargins(TEC, FUN = sum), caption = "Tableau de contingence avec les marges") #19
+```
+
+Nous pouvons ajouter les marges dans notre tableau de contingence comme le montre le tableau 19. Elles nous informe par exemple que 215 femmes de nos données on les yeux bleus, ou encore que 71 d'entre elles sont rousses.
+
+```{r message=FALSE,echo=FALSE}
+#Distribution conditionnelle des couleur des cheveux sachant la couleur des yeux
+C =sweep(TEC, MARGIN=1,STATS = c,FUN = "/")*100
+C =round(addmargins(C,FUN =sum),2)[-5,]
+kable(C, caption = "Distribution conditionnelle des couleur des cheveux sachant la couleur des yeux") #20
+```
+
+Le tableau 20 des distribution conditionnelle de la couleur des cheveaux, sachant la couleur des yeux, nous apprend par exemple que, dans nos données, 58,06% des femmes au yeux noissettes on une couleur de cheveux chatin.
+
+```{r message=FALSE,echo=FALSE}
+#Distribution conditionnelle des couleur des yeux sachant la couleur des cheveux
+R =sweep(TEC, MARGIN=2,STATS = r,FUN = "/")*100
+R =round(addmargins(R,FUN =sum),2)[,-5]
+R=R
+kable(R, caption = "Distribution conditionnelle des couleurs des yeux sachant la couleur des cheveux") #21
+```
+
+Le tableau 21 correspond à l'inverse. Ici il s'agit de la distribution conditionnelle des couleur des yeux, sachant la couleur des cheveux. On apprend que les femmes brune de nos données ont pour 13.89% d'entre elles les yeux noissettes. 
+
+
+
+```{r message=FALSE,echo=FALSE}
+#matrice taux de liaison
+
+kable(round(cor(TEC),3),caption = "Matrice taux de liaison") #22
+
+
+```
+
+Le tableau 22 nous apprend les laisions (variant entre -1 et 1), entre les modalité de la variable couleur de cheveaux. Par exemple on voit qu'il y a un lien positive entre la couleur chatin et brun, ce qui signifie qu'il y a une tendance similaire entre ces deux modalité vis à vis de la couleur des yeux. 
+
+```{r message=FALSE,echo=FALSE}
+#Test du khi2
+chisq.test(TEC)
+```
+
+On remarque une pvaleur inferieur 2.2e-16, une valeur très proche de zero.Ce qui nous permet de rejeter l’hypothèse d’indépendance entre la couleur des yeux et celle des cheveaux.Il ya donc un lien à étudier entre ces deux variables.
+
+\newpage
+
+`
+
+# Chapitre 2 :Mesure de la liaison entre une variable et un ensemble de variables
+
+## Exercice 19
+
+Nous étudions ici un croisant de classe d’âge et de diplôme, pour 90 individus.
+
+```{r message=FALSE,echo=FALSE}
+data <- data.frame(BEPC = c(15,10,15,40), BAC = c(12,18,5,35), Licence
+= c(3,4,8,15), Total = c(30,32,28,90))
+rownames(data) <- c("Plus de 50 ans", "Entre 30 et 50 ans", "Moins de 30 ans", "Total")
+
+kable(data,caption = "tableau de contingence de la classe d’âge croisé avec le diplôme") #1
+```
+
+Le tableau 1 nous donne les effectifs croisée de nos deux variable. On apprend par exemple que dans nos données il y a 40 individus avec un BEPC, et que 15 d'entre eux ont plus de 50 ans. 
+
+```{r message=FALSE,echo=FALSE}
+#Tableau de contingence des fréquences
+TCF = round(data/90,3)*100
+kable(TCF,caption = "Tableau des fréquences croisées en pourcentage") #2
+```
+
+On peut obtenir les fréquences de notre tableau 1. C'est ce qu'illustre le tableau 2, on voit par exemple que 35.6% de nos individus ont entre 30 et 50 ans , et 20% d'entre eux on un bac. 
+
+```{r message=FALSE,echo=FALSE}
+#profil ligne en pourcentage (derniere colonne que des 1)
+PL = round(sweep(data, MARGIN=1,STATS = data[,4],FUN = "/")*100,2)
+kable(PL,caption = "profils lignes en pourcentage") #3
+```
+
+Le tableau 3 nous donne les fréquence sachant la trache d'age. On voit que 28.57% des moins de 30 ans on une licence.
+
+```{r message=FALSE,echo=FALSE}
+#profil collone en fréquence (derniere ligne que des 1)
+
+PC =round(sweep(data, MARGIN=2,STATS = t(data[4,]),FUN = "/")*100,2)
+kable(PC,caption = "Profils collones en pourcentage") #4
+```
+
+Le tableau 4 nous donne les fréquences sachant le diplome, on apprend que pour ceux ayant un bac, 51.43% ont entre 30 et 50 ans.
+```{r message=FALSE,echo=FALSE, warning=FALSE}
+chisq.test(data)
+```
+On retrouve une pvlaur de 0.2639, une valeur conséquente qui nous permet de conclure sur le non rejet de H0, et d'en déduire qu'il y a independance entre les deux variables.
+
+
+
+## Exercice 20
+
+Pour une population d’effectif de taille 1000 on a mesuré les deux variables qualitatives “Couleur des yeux” et “Etat matrimonial”. 
+```{r message=FALSE,echo=FALSE}
+tableau <- matrix(c(290,410,110,190), ncol=2, byrow=TRUE)
+colnames(tableau) <- c("Bleu","Brun")
+rownames(tableau) <- c("Celib","Marie")
+tableau <- as.table(tableau)
+
+
+kable(tableau, caption = "Tableau de contingence de la Couleur des yeux et Etat matrimonial") #5
+```
+
+Le tableau 5 nous apprend que parmis nos 1000 individus 290 sont celibataire avec les yeux bleu. Ou encore que 190 sont mariés avec les yeux brun.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,fig.cap= "Diagramme empilé de la couleur des yeux selon la situation matrimoniale"}
+
+barplot(tableau, col = c("green","red"),  main = "Diagramme empilé de la couleur des yeux selon la situation matrimoniale", cex.main = 1)
+
+legend("topleft", legend= c("celib","marie"), inset=.02,  fill=c("green","red"))
+```
+
+On peut rendre graphique le tableau 1. Grace à la figure 1 on remarque que nous avec moins d'individus aux yeux bleu que aux yeux brun. 
+
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+n <- margin.table(tableau) # effectif total
+
+m1 <- margin.table(tableau,1) #lois marginale de l'état matrimonial
+
+m2 <- margin.table(tableau,2) #lois marginale de la couleur des yeux
+
+prop.table(tableau) #tableau de contingence en fréquence
+```
+
+
+Quelque commande R utile sur nos données :
+
+n <- margin.table(tableau) => effectif total
+
+m1 <- margin.table(tableau,1) => lois marginale de l'état matrimonial
+
+m2 <- margin.table(tableau,2) => lois marginale de la couleur des yeux
+
+prop.table(tableau) => tableau de contingence en fréquence
+
+```{r message=FALSE,echo=FALSE}
+kable(prop.table(tableau)*100, caption = "tableau de contingence en pourcentage") #6
+```
+
+Voici par exemple le tableau tableau de contingence en pourcentage cette fois. On apprend que 41% des indivudus sont celibataire au yeux brun.
+
+```{r message=FALSE,echo=FALSE}
+#Tableau des effectifs tehorique 
+tab0 <- as.array(m1) %*% t(as.array(m2))/n 
+tab0 <- as.table(tab0)
+kable(tab0,caption = "Tableau des effectifs tehorique") #7
+```
+
+Le tableau 7 nous montre les effectifs théorique, c'est à dire les effectifs si nos variables étaient parfaitement indépandantes.
+
+```{r message=FALSE,echo=FALSE}
+summary(tableau)
+```
+
+La stat du khi2 mesure l'écart entre le tableau de contingence et le tableau des effectif théorique. 
+
+Les résultat du test du khi2 indique une pvaleur supperieur à 0.05 ce qui nous permet de ne pas rejet H0, l'hypothèse d'indépendance.
+
+```{r message=FALSE,echo=FALSE}
+summary(tab0)
+```
+
+Si on réalise le test sur le tableau des effectifs théoriques, on trouve une pvaleur de 1. Ce qui prouve que ces données reflete l'indépandence parfaite.  
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+tableau2 <- matrix(c(0,600,400,0), ncol=2, byrow=TRUE)
+colnames(tableau2) <- c("Bleu","Brun")
+rownames(tableau2) <- c("Celib","Marie")
+tableau2 <- as.table(tableau2)
+tableau2
+```
+
+```{r message=FALSE,echo=FALSE}
+chisq.test(tableau2)
+```
+
+quand on réalise le test sur un tableau truqué, ou tous les individus aux yeux bleus sont mariés et tous
+les autres sont célibataires, on trouve une pvaleur très petit. Donc un rejet de H0, il y a une forte dépendance entre les deux variables.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#HairEyeColor;Titanic; UCBAdmissions
+```
+
+
+## Exercice 21
+
+Pour cet exercice nous utiliserons le jeu de données car directement implanté dans R.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data(cars)
+#?cars
+names(cars)
+dim(cars)
+#Que représente ce jeu de données (attention aux unités) ?
+#Comment doit-on appeler les variables ?
+#Quelle est la taille de la matrice ? 
+```
+
+```{r echo=FALSE, message=FALSE}
+kable(head(cars),caption = "Extrait du jeu de donnée cars") #8
+```
+
+
+Ces données indiquent la vitesse de 50 voitures et les distances nécessaires pour s'arrêter. Notez qu'elles ont été enregistrées dans les années 1920. Nous retrouvons un extrait de ces données dans le tableau 8.
+
+La Matrice est de taille 50 lignes 2 collones. Il y a donc deux variables qui sont "speed"	vitesse en mph, et "dist" distance en ft.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+reg<-lm(dist~speed,cars)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# plot(cars)
+# #Deux variable quanti, nuage de points RAS c'est bon !
+# reg<-lm(dist~speed,cars)
+# attributes(reg) #Sa carte d’identité
+# summary(reg)
+# anova(reg)
+# #On retrouve la meme pvaluer et la meme statistique de test entre anova(reg) et summary(reg).
+# names(reg)
+# p =plot(reg)
+#4 graphiqueson n’en connait qu’un, éventuellement deux (les graphiques 1 et 3) mais le 2 et le 4 sont sans doute inconnus.
+
+#Le graphique 2 (QQ-plot) permet de vérifier l’hypothèse de normalité des résidus : si les points sont à peu près alignés en se confondant avec la première bissectrice des axes, on peut dire que les résidus suivent une loi normale.
+
+#Le graphique 4 (Cook’s D) permet de repérer les points ń influents ż, c’est-à-dire ceux pour qui la régression linéaire est mal (ou pas) adaptée, parce qu’ils se situent trop loin de la droite de régression. Ces points sont repérés par de grandes valeurs du D de Cook
+
+```
+
+```{r message=FALSE,echo=FALSE,fig.cap="Nuage de points de la distance d'arret et la vitesse"}
+
+plot(cars, pch = 20, col="blue", 
+     main ="Nuage de points de la distance d'arret et la vitesse", cex.main = 1)
+
+abline(reg=reg,col="red") #ou abline(reg$coeff,col="yellow")
+```
+
+Un nuage de points est une bonne representation entre deux variables quantitative. La figure est donc adapter à nos données.Les points semble liée linéairement de maniere postive et croissante.La droite de regression,en rouge, est celle qui passe le plus près de tout les points.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+predict(reg,data.frame(speed=20)) 
+```
+
+Le modele predit une distance de frainage de 61.07 ft pour une vitesse de 20 mph.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+id= predict(reg,data.frame(speed=20),interval = "confidence") #intervalle de confiance
+
+
+paste("[",round(id[2],2),",",round(id[3],2),"]")
+```
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+id= predict(reg,data.frame(speed=20),interval = "predict" ) #l'intervalle de prédiction
+
+paste("[",round(id[2],2),",",round(id[3],2),"]")
+```
+Intervalle de confiance : [ 55.25 , 66.89 ]
+
+Intervalle de prédiction : [ 29.6 , 92.54 ]
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#L’exemple cars est-il adapté à la sélection de modèles ? Oui
+```
+L’exemple cars est adapté à la sélection de modèles.
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#?update
+```
+update() : Va mettre à jour et (par défaut) réajuster un modèle. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#?step
+```
+step() : Sélectionnez un modèle basé sur une formule par AIC.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+
+#cpus
+```
+
+\newpage
+
+
+
+
+## exercice 22
+
+Nous utiliserons des données sont extraites d’un reccueil de données issu d’une enquête portant sur une population d’enseignants de collèges. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Donnee sur enseignant
+library(readxl)
+data<- read_excel("C:/Users/ilias/OneDrive/Bureau/AD/Donnees sur enseignants.xls")
+attach(data)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(data),caption = "Extrait des données")
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+dim(data)
+#168 individus , 11 variables 
+names(data)
+#Nom des variables
+```
+
+Le tableau 1 est un extrait des données que nous utiliserons. Il y a un total de11 variables, pour 168 individus. La plupart des variables sont explicites. Le salaire est exprimé en euros, l’âge et l’ancienneté en années. Le stress, l’estime de soi et la satisfaction au travail sont mesurés sur des échelles allant de 0 à 50 suivant des techniques appropriées.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+summary(data)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(summary(data[,7]),caption = "Résumé statistique du salaire")
+```
+
+Quand on s'interesse de près au salaire dans nos données, grâce au tableau 2, on trouve un minimum de 1200€, un maximum de 2200€, et un salaire médian de 1720€.
+
+
+### Croisement qualitatif vs qualitatif : Sexe et  EtatCivil
+
+Essayons de croisée deux variables, avec le sexe et l'état civil.
+
+```{r message=FALSE,echo=FALSE}
+#Tableau de contingence en effectif 
+TDC_E_1 =table( Sexe,EtatCivil)
+TDC_E =addmargins(TDC_E_1,FUN = sum)
+
+kable(TDC_E, caption = "Tableau de contingence entre le sexe et l'état civil") #3
+```
+
+On commence par croiser les effectifs de nos deux variables dans le tableau 3. On apprend par exemple que sur les 168 hommes de nos données, 89 sont mariés.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Tableau de contingence en fréquence 
+TDC_F_1 =round(prop.table(TDC_E_1),3)
+TDC_F =addmargins(TDC_F_1,FUN =sum)
+```
+
+```{r message=FALSE,echo=FALSE}
+#Tableau de contingence en pourcentage 
+TDC_P_1 =round(prop.table(TDC_E_1)*100,3)
+TDC_P =addmargins(TDC_P_1,FUN =sum)
+
+kable(round(TDC_P,2), caption = "Tableau des fréquences croisée entre le sexe et l'état civil en %") #4
+
+```
+
+Le tableau 4 nous donnes les pourcentages du croisement entre nos deux variables. On remarque que 73.84% de nos individus sont mariés dont 22.62% sont des femmes.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Ballonplot du croisement entre sexe et état civil"}
+layout(matrix(1:2, 1), respect=TRUE)
+
+ggballoonplot(TDC_E, col = "white",fill = "value", color = "lightgray",
+              size = 10, main = "Ballonplot du croisement entre sexe et état civil", cex.main = 1,
+              show.label = TRUE) +
+  gradient_fill(c("blue", "white", "red"))
+
+```
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Diagramme en barre du croisement entre sexe et état civil"}
+barplot(TDC_P_1, beside=TRUE, col= c("pink",4),
+        ylim = c(0,60),ylab = "pourcentage",
+        main = "Diagramme en barre du croisement entre sexe et état civil",
+        cex.main = 1,legend.text = c("Femme","Homme")) #2
+```
+
+\newpage
+Nous pouvons rendre graphique les résultats de nos tableau de contingence, comme le font les figures 1 et 2.
+
+
+```{r message=FALSE,echo=FALSE}
+#Profil Collone 
+PC = round(sweep(TDC_E, MARGIN=2,STATS = t(TDC_E)[,3],FUN = "/")*100,2)
+
+kable(PC,caption = "Distribution conditionnelle du sexe sachant l'état civil en %") #5
+```
+
+Le tableau 5 nous apprend que parmis nos individus veufs, 71.3% sont des femmes. 
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(TDC_E, MARGIN=1,STATS = TDC_E[,5],FUN = "/")*100,2) #6
+
+kable(PL,caption = "Distribution conditionnelle de l'état civil sachant le sexe en %")
+```
+
+Le tableau 6 nous dit que parmis nos individus femmes, 13.21% sont célibaraires.
+
+
+```{r message=FALSE,echo=FALSE, warning=FALSE}
+test_khi2 = chisq.test(TDC_E)
+test_khi2
+```
+
+Quand on réalise le test pour savoir s'il ya indépendance entre nos deux variables, on trouve une p_valeur plutôt grande, ce qui nous ne permet pas de rejet H0, il y a indépendance entre le sexe et l'état civil.
+
+```{r message=FALSE,echo=FALSE}
+#tableau des effectifs théoriques
+TET = round(test_khi2$expected,2)
+kable(TET, caption = "Tableau des effectifs théoriques") #7
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+sum(  ( (TDC_E-TET)**2 ) /TET   )
+
+ddl = 1*3
+qchisq(0.95,ddl)
+```
+
+Grâce au tableau 7 on peut obtenir la satistique de notre test. On trouve 5.69 ce résultat est visible dans les sorties de notre de test. Le quantile de la lois de khi2 est de 7.81, plus grand que notre stat de test. On ne rejet donc pas l'hypothèse d'indépendance.
+
+
+### Croisement quantitatif vs qualitatif : Stress vs EtatCivil
+
+maintenant croisons l'état civil avec une autre variable qui est le stress.
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Stress)),caption = "Statistique élémentaire de la variable stress")  #8
+```
+
+Regardons les statistiques élémentaires de cette variable. Avec le tableau 8 on remarque par exemple que le stress moyen est de 18.20. 
+
+```{r message=FALSE,echo=FALSE,fig.cap= "Boite à moustache de la variable stress"}
+boxplot(Stress, main= "Boite à moustache de la variable stress", col= 4, cex.main =1) #3
+```
+
+Illustrons ces statistiques. Sur la figure 3 on voit que cette variable est bien distribuer autour de la médiane. On voit également qu'il y a 2 valeurs aberrantes.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Nclass sert à savoir le nombre de découpage optimal selon une méthode 
+#mais ne crée pas des classes.
+
+decoup_stress =cut(Stress,breaks = 5)
+#5 classes de meme amplitude
+
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_E_2=table(EtatCivil,decoup_stress)
+kable(addmargins(TDC_E_2,FUN = sum), 
+      caption = "Croisement entre l'état civil et le stress" ) #9
+```
+
+Pour analyser le croisement entre ces deux variables il faut au préalable découper en classe la variable stess. Nous la découpons en 5 classes de même amplitude. Une fois réaliser nous pouvons faire le tableau 9 du croisement des effectifs. On apprend par exemple que 58 individus mariés on un stress entre 15 et 20.6.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+TDC_F_2=round(prop.table(TDC_E_2),3)
+addmargins(TDC_F_2,FUN = sum) 
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_P_2=round(prop.table(TDC_E_2)*100,3)
+kable(addmargins(TDC_P_2,FUN = sum), caption = "Fréquence croisée en %" ) #10
+```
+
+Le tableau 10 nous apprend que 2.38% des célibataires on un stress entre 9.33 et 15.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Boites à moustache du stress selon l'état civil"}
+boxplot(Stress~EtatCivil,col=2:10,main="Boites à moustache du stress selon l'état civil", cex.main =1) #4
+```
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Histograme du stress selon l'état civil"}
+histogram(~Stress | EtatCivil, col = 4, main = "Histograme du stress selon l'état civil", cex.main = 1) #5
+```
+
+\newpage
+
+
+On remarque avec la figure 4 et 5 que la distribution du stress entre les célibataire et les divorcés est assez similaire. Pour les mariés on retrouve une distribution étendu qui vas prendre des valeurs plus grande. Alors que pour les veufs on retrouve un étendu plus faible, les valeur du stress pour les veufs est plus faible.
+
+
+
+```{r message=FALSE,echo=FALSE}
+by(Stress,EtatCivil,summary)
+```
+
+On peut regarder les statistiques élémentaires du stress selon l'état civil dans le tableau 11. On voit par la médiane pour les veufs est plus faible que pour les autres groupes. On retrouve les mêmes résutats que la figure 3.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+require(BioStatR)
+eta2(Stress,EtatCivil) #rapport de correlation
+
+#7.4 % de la variabilité du stress est expliquée par l'état civil.
+```
+
+On peut calculer le rapport de corrélation entre nos deux variables. On trouve 0.075. Cela nous dit que 7.5% de la variabilité du stress est expliquée par l'état civil.
+
+
+```{r message=FALSE,echo=FALSE}
+#H0 : Différence non significative
+#aov(Stress ~ EtatCivil)
+summary(aov(Stress ~ EtatCivil))
+
+#Pvaleur petite : rejet de H0, il y a une difference entre la valeur du stress selon les differents l'état civil.
+```
+
+On réalise un test pour si il y a une différence entre les états civils pour la valeur du stress. On trouve une pvaleur inférieur à 0.05, on peut rejeter l'hypothèse 0 et dire qu'il y a une différence entre la valeur du stress selon les differents états civils.
+
+### Croisement quantitatif vs quantitatif : Age vs Satisfaction
+
+On vas maintenant voir le croisement entre les variables age et satisfaction. 
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Satisfaction)), caption = "Statistique élémentaire de la satisfaction")
+#11
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Age)), caption = "Statistique élémentaire de l'age") #12
+```
+
+Les tableaux 11 et 12 nous donnes les indicateurs statistiques sur nos variable. On remarque pae exemple que la satisfactions moyenne et de 20.43 et celle de l'age est de 41.99.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Boxplot des variable satisfaction et age"}
+layout(matrix(1:2, 1), respect=TRUE)
+boxplot(Satisfaction, col = 4, main ="Boxplot de la satisfaction", cex.main = 1, ylim=c(0,60))
+
+boxplot(Age, col = 4, main ="Boxplot de l'age", cex.main = 1, ylim=c(0,60))
+#6
+```
+
+\newpage
+
+On peut rend visuel nos résultats comme dans la figure 6. On remarque que, pour les deux variables, il n y pas de valeur abérante.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+decoup_Satisfaction = cut(Satisfaction,breaks = 5)
+decoup_age = cut(Age, breaks = 4)
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_E_3_1=table(decoup_Satisfaction,decoup_age)
+TDC_E_3=addmargins(TDC_E_3_1,FUN = sum)
+kable(TDC_E_3, caption = "Tableau de contingence entre la satisfaction et l'age") #13
+```
+
+Nous avons 2 variables quantitatives, il faut donc crée des classes chacune d'entre elle afin de pouvoir les croiser. Quand on croise les effectifs, on obtient la distribution résumé dans le tableau 13. On apprend par exemple que 38 de nos individus entre 33 et 41 ans on une satisfaction compris ente 10.8 et 17.7. Si on est bien attentif on remarque que quand l'age augmente, la satisfaction augmente également. Regardons cela dans un graphique.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+TDC_F_3=round(prop.table(TDC_E_3_1),3)
+addmargins(TDC_F_3,FUN = sum)
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_P_3=round(TDC_F_3*100,3)
+TDC_P_3=addmargins(TDC_P_3,FUN = sum)
+kable(TDC_P_3, caption = "") #14
+```
+
+Avant cela regardons d'autre facon d'illustrée le croisement entre nos deux variables. Avec le tableau 14 on retrouve le pourcentage de chaque croisement.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "ballon plot de la satisfaction croisée avec l'age"}
+ggballoonplot(TDC_E_3 ,fill = "value", col =4 , main= "ballon plot de la satisfaction croisée avec l'age", cex.main  = 1 ) #7
+```
+
+\newpage
+
+Ou encore avec la figure 7 qui donne un cercle plus ou moins gros selon l'effectif du croisement.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Nuage de points de la satisfaction selon l'age"}
+plot(Satisfaction~Age, pch = 20, col=4, main = "Nuage de points de la satisfaction selon l'age") #8
+```
+
+\newpage
+
+Graphiquement on se rend compte directement de la liaison entre nos deux variables. La figure 8 nous montre un relation qui est croissante est positif. On voit un point qui ne se comporte pas comme les autres, un intrus.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Nuage de points de la satisfaction croisée à l'age selon le sexe"}
+scatterplot(Satisfaction~Age|Sexe,
+            regLine =FALSE, grid =F,smooth = FALSE, legend = FALSE,
+            main ="Nuage de points de la satisfaction croisée à l'age selon le sexe", cex.main = 1,
+            col=c("pink",4),pch=c(2,3))
+
+legend("topleft",c("Femme","Homme"),cex=.8, col=c("pink",4),pch=c(2,3), text.font=4) #8
+```
+
+\newpage
+
+On peut ajouter l'information sur le sexe comme sur la figure 9. Le sexe ne semble pas avoir d'influence sur notre croisement de la satisfaction et de l'age.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+cov_SxA = mean(Age*Satisfaction) - (mean(Age)*mean(Satisfaction))
+cov_SxA
+cov(Satisfaction,Age)
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+cov(Satisfaction,Age)/(sd(Satisfaction)*sd(Age))
+cor(Satisfaction,Age)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(cor(cbind(data[6:10],Age)),3), caption = "Matrice des corrélations") #15
+```
+
+Le tableau 15 nous donne les lien entre chaque variable. Plus le chiffre est proche de 1 plus le liens est fort positivement, plus il est proche de -1 plus le lien est fort mais négativement. Vers 0 la relation est faible. Pour la satisfaction et l'age on voit un coefficient très proche de 1, ce qui confirme les résultats vue précedement. 
+
+```{r message=FALSE,echo=FALSE, fig.cap= "corrélogramme"}
+corrplot(cor(data[6:10]), type="upper", order="hclust", 
+         tl.col="black", tl.srt=45, cex.main=1) #9
+```
+
+On peut illustrée ce tableau comme le montre la figure 10. Plus le cercle est bleu plus la corrélation est forte, comme par exemple avec l'ancienneté et la satisfaction.
+
+
+\newpage
+
+
+
+# Chapitre 3 : Analyse en Composantes Principales
+
+## Exercice 23
+
+L'objectif va être de retrouvé les données trouvée en cours sur un jeu de données. Les informations présente dans le cours sont sur ces données : La matrice de corrélation, le vecteur propre, les valeurs propres, ainsi que les coordonées pour les variables et individus. 
+
+```{r message=FALSE,echo=FALSE}
+Z1 = c(1.00 ,2.00, 3.00 ,4.00, 9.00)
+Z2 = c(5.00 ,10.00 ,8.00 ,8.00 ,12.00)
+Z =data.frame(Z1,Z2)
+kable(Z,caption = "Données")  #1
+```
+
+Le tableau 1 nous montre les données utilisée, il y a 2 variables, Z1 et Z2, pour 5 individus.
+
+```{r message=FALSE,echo=FALSE}
+X1 = round((Z1 - mean(Z1)) / 2.79 , 3) #sd(Z1)
+X2 = round((Z2 - mean(Z2)) / 2.33 , 3) #sd(Z2)
+X =data.frame(X1,X2)
+kable(X, caption = "Données centrée réduite") #2
+```
+
+Pour étudier ces donnée il faut d'abord les centrée et réduire. Nous obtenons donc les données du tableau 2 avec X1 et x2 comme nouvelles variables. Dans le cours les écart type utilisés sont faux. Ici on utilisera les écat type du cour  afin d'avoir les mêmes résultats que dans le cours.
+
+```{r message=FALSE,echo=FALSE}
+#Matrice des corrélations
+kable(round(cor(X),3),caption = "Matrice des corrélations" ) #3
+```
+
+La première matrice que nous avons est la matrice des correlélations. On trouve avec le tableau 3 un rapport de corrélation de 0.788 comme dans le cours. Il y a donc une légère corrélation positive entre nos deux variables.
+
+
+```{r message=FALSE,echo=FALSE}
+#Matrice des covariances
+n= dim(X)[1]
+R <-t(as.matrix(X))%*%as.matrix(X)/(n-1) #cov(X) et non cor(X) comme dit dans le cour
+
+e <- eigen(cor(X))
+#dim(e$vectors)
+
+V <- e$vectors #Vecteur Propre 
+kable(round(V,3),caption = "Vecteur Propre") #4
+```
+
+On calcule ensuite le vecteur propre, qui constitue le tableau 4. On trouve une différence par rapport au résultat du cour. En effet le signe moins n'est pas sur la même valeur dans le cours.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+VP =round(e$values ,3)
+
+VarExpA1 = VP[1]/2 *100
+VarExpA2 = VP[2]/2 *100
+```
+
+Le premier facteur associé à la valeur propre 1.787, et 0.212 pour le deuxième. On vas donc retrouvée les mêmes valeurs de pourcentages de variance expliquées , 89.4% pour l'axe 1 et 10,6% pour l'axe 2. On conservera ces deux axes.
+
+```{r message=FALSE,echo=FALSE}
+#Coordonnée des variables
+Cord_Axe1 = sqrt(VP[1])*V[,1] #Coordonée de X1 et X2 sur l'axe 1
+Cord_Axe2 = sqrt(VP[2])*V[,2] #Coordonée de X1 et X2 sur l'axe 1
+Cord = cbind(Cord_Axe1,Cord_Axe2)
+rownames(Cord) = c("X1","X2")
+kable(round(Cord,3),caption = "Coordonnées des variables") #5
+```
+
+On peut calculer les coordonées de nos deux variables. Nous trouvons avec le tableau 5 que les coordonées de X1 seront de 0.944 sur l'axe 1 et -0.326. Et pour X2, 0.947 sur l'axe 1 et 0.325 pour l'axe 2.Par rapport au résultat du cours on retrouve le même problème vis-à-vis du signe moins.
+
+
+```{r message=FALSE,echo=FALSE}
+#Coordonnée des individus
+Fbis <- as.matrix(X)%*%V
+colnames(Fbis) =  c("X1","X2")
+rownames(Fbis) =1:5
+kable(round(Fbis,3),caption = "Coordonnée des individus") #6
+```
+
+Il nous reste plus que les Coordonnées des individus. Ont les retrouvent dans le tableau 6. Les individus 1 et 5 contribuent fortement à l'axe 1, tandis que l'individu 2 contribus le plus à l'axe 2.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.pr1 <- princomp(Z,cor=T)
+res.pr2 <- prcomp(Z,scale=TRUE)
+```
+
+Nous allons maintenant comparer 2 fonctions qui réalise des ACP sous R. Il s'agit de princomp et prcomp. On concervera les données précedente.
+
+```{r message=FALSE,echo=FALSE}
+#Valeur Propre
+
+# princomp
+kable(round(get_eigenvalue(res.pr1),3), caption = "Valeur propre avec princomp") #7
+kable(round(get_eigenvalue(res.pr2),3) , caption = "Valeur propre avec prcomp") #8
+```
+
+On commence avec les valeurs propres. On voit les sorties des deux fonctions dans les tableau 7 et 8, et on remarque que les sorties sont excatement les mêmes.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# princomp
+ind1 = get_pca_ind(res.pr1) #individus
+var1 = get_pca_var(res.pr1) #variable
+
+#prcomp
+ind2 = get_pca_ind(res.pr2) #individus
+var2 = get_pca_var(res.pr2) #variable
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var1$coord,3), caption = "coordonnées des variables avec princomp") #9
+kable(round(var2$coord,3) , caption = "coordonnées des variables avec prcomp") #10
+# coordonnées des variables pour créer un nuage de points.
+```
+
+Pour les coordonnées des variables on voit dans les tableaux 9 et 10, les sorties des deux fonction sont les mêmes. A noté qu'avec ces deux fonctions le signe moins est comme dans le cours. On vas voir que cela est différent avec la fonction PCA.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var1$cos2,3), caption = "Cos2 des variables avec princomp")
+kable(round(var2$cos2,3),caption = "Cos2 des variables avec prcomp")
+# Représente la qualité de représentation des variables sur le graphique de l’ACP.
+```
+
+Pour les qualités de représentations des variables (cos2) des variables on voit dans les tableaux 10 et 11, les sorties des deux fonctions sont les mêmes.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var1$contrib,3), caption = "Contribution des variables avec princomp")
+kable(round(var2$contrib,3),caption = "Contribution des variables avec prcomp")
+#contient les contributions (en %), des variables, aux composantes principales
+```
+
+Et Pour finir la contributions des variables est aussi la mêmes entre les deux fonctions.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind1$coord,3), caption = "Coordonées des individus avec princomp")
+kable(round(ind2$coord,3),caption = "Coordonées  des individus avec prcomp")
+```
+
+Pour les individus maintenant. C'est la que l'on retrouve des différences. Deja pour les coordonnées on trouve des dissimilarité ont le voit dans les tableau 15 et 16.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind1$cos2,3), caption = "Cos2 des individus avec princomp")
+kable(round(ind2$cos2,3),caption = "Cos2  des individus avec prcomp")
+```
+
+Cepandant les qualités de représentation des individus (cos2) sont les mêmes d'une fonction à une autre.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind1$contrib,3), caption = "Contributions des individus avec princomp")
+kable(round(ind2$contrib,3),caption = "Contributions  des individus avec prcomp")
+```
+
+Et pour les contributions, on remarques dans les tableaux ci-dessus que les valeurs sont différentes.
+
+Les plus grosses différences entre princomp et prcomp ce font au niveau des individus et non pour les variables. Regardons maintenant les résultats avec la fonction PCA.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.pca = PCA(Z, graph = F) #centre réduit automatiquement
+```
+
+
+
+```{r message=FALSE,echo=FALSE}
+#Valeur Propre
+kable(round(get_eigenvalue(res.pca),3), caption = "Valeur propre avec PCA") #20
+```
+
+Pour les valeurs propres, on retrouve encore les résultats précedents comme le montre le tableau 21. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+ind = get_pca_ind(res.pca) #individus
+var = get_pca_var(res.pca) #variable
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var$coord,3), caption = "coordonnées des variables avec PCA") 
+```
+
+Pour les coordonées des variables on voit dans le tableau 21 que le signe moins est placé comme pour l'ACP à la main. Plus exactenement ce signe change de position si on utilise les données centrées réduites, hors ceci est fait automatiquement dans cette fonction.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var$cos2,3), caption = "Cos2 des variables avec PCA")
+kable(round(var$contrib,3), caption = "Contributions des variables avec PCA")
+```
+
+Pour les qualités de représentation des variables et les contributions, pas de problème on retrouve les mêmes résultats avec les 3 fonctions.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind$coord,3), caption = "Coordonées des individus avec PCA")
+```
+
+Maintenant regardons les résultats de PCA avec les individus. Pour les coordonnées la fonction PCA s'accorde avec la fonction princomp.
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind$cos2,3), caption = "Cos2 des individus avec PCA")
+```
+
+Pour le cos2, la fonction PCA s'accorde avec toutes les autres méthodes.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(ind$contrib,3), caption = "Contributions des individus avec PCA")
+```
+Et pour finir le tableau ci-dessus nous montre que les contributions de la fonction PCA sont les mêmes qu'avec la fonction princomp.
+
+On en déduit que les fonctions PCA et princomp réalise l'ACP de la même façon.
+
+\newpage 
+
+## Exercice 24
+
+Dans cette partie on traitera des données des stations de ski en Savoie. On dispose, pour 32 stations, des variables suivantes (données 1998).
+
+— prixforf : prix du forfait 1 semaine (Euros)
+
+— altmin : altitude minimum de la station (m)
+
+— altmax : altitude maximum de la station (m)
+
+— pistes : nombre de pistes de ski alpin
+
+— kmfond : nombre de kilomètres de pistes de ski de fond remontee : nombre de remontées
+mécaniques
+
+
+```{r message=FALSE,echo=FALSE}
+data=read.csv("C:/Users/ilias/OneDrive/Bureau/AD/stations.txt", sep="")
+data = data[2:6]
+attach(data)
+kable(head(data),caption = "Extrait des données Station")
+```
+
+Voici un extrait des données que nous traiterons.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.pca.station = PCA(data , graph = FALSE) #centre réduit automatiquement
+```
+
+
+### Valeurs propres :
+
+Les valeurs propres mesurent la quantité de variance expliquée par chaque axe principal. Nous examinons les valeurs propres pour déterminer le nombre de composantes principales à prendre en considération. 
+
+```{r message=FALSE,echo=FALSE}
+VP = round(get_eigenvalue(res.pca.station) , 3)
+kable(VP, caption = "Valeurs propres")
+#Extraction des valeurs propres/variances des composantes principales.
+```
+
+\newpage 
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Visualisation des valeurs propres"}
+fviz_eig(res.pca.station , addlabels = TRUE)
+#Visualisation des valeurs propres.
+```
+
+On voit avec le tableau et figure ci-dessus qu'avec 3 axes ont obtion une variance expliquée de presque 90%, ce qui est suffisant. On concervera donc les 3 premières dimension. 
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+ind.station = get_pca_ind(res.pca.station) #individus
+var.station = get_pca_var(res.pca.station) #variable
+#retourne une liste d’éléments contenant tous les résultats pour les variables ou individus actives
+```
+
+ 
+
+### Variables :
+
+```{r message=FALSE,echo=FALSE}
+CV = round(var.station$coord ,3)
+kable(CV, caption = "coordonnées des variables")
+# coordonnées des variables pour créer un nuage de points.
+```
+
+Le tableau suivant montre les valeurs des coordonnées afin de crée un cercle des corrélations.
+
+\newpage 
+
+```{r message=FALSE,echo=FALSE}
+QR = round(var.station$cos2 ,3)
+kable(QR, caption = "Qualité de représentation des variables ")
+# Représente la qualité de représentation des variables sur le graphique de l’ACP.
+```
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Corrélogramme des variables pour chaque dimension"}
+#visualiser le cos2 des variables 
+corrplot(var.station$cos2, is.corr=FALSE) #Corrélogramme sur toutes les dimensions
+#ou 
+#fviz_cos2(res.pca.station, choice = "var", axes = 1 :2) 
+#diagramme en barre ici on considère l'axe 1 et 2
+```
+
+Ensuite on regarde qualité de représentation des variables pour chaque dimension à l'aide du graphique et tableau ci-dessus. On voit pas exemple que les variables prixforf et piste sont très bien représenté sur l'axe 1.
+
+\newpage 
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var.station$contrib,3), caption = "Contributions des variables")
+#contient les contributions (en %), des variables, aux composantes principales
+```
+
+```{r message=FALSE,echo=FALSE, fig.cap="Diagramme en barre des contributions des variables"}
+#visualiser les contribution des variables 
+
+#corrplot(var.station$contrib, is.corr=FALSE) #chaque dimension
+
+#ou
+
+#Si vos données contiennent de nombreuses variables, vous pouvez décider de ne montrer que les principales variables contributives. avec les barplot.
+
+#La ligne en pointillé rouge, sur le graphique ci-dessus, indique la contribution moyenne attendue. (1/nb_variable). une variable avec une contribution supérieure à ce seuil pourrait être considérée comme importante pour contribuer à la composante.
+
+#fviz_contrib(res.pca.station, choice = "var", axes = 1, top = 5) 
+# ici pour 10 variables sur l'axe 1
+
+fviz_contrib(res.pca.station, choice = "var", axes = 1:2, top = 5)
+# ici pour 10 variables sur l'axe 1 et 2
+
+```
+
+On s'interesse maintenant à la contribution des variables. On voit avec le tableau les contribution de chaque variabes pour chaque dimension. Par exemple la variable prixforf contribue à 36.7% de l'axe 1. Le graphique nous montre ces contribution pour le premier plan. La ligne rouge indique la contribution moyenne attendue. Toute les variables qui dépasse cette ligne considérée comme importante pour contribuerau premier plan.
+
+\newpage 
+
+```{r message=FALSE,echo=FALSE,fig.cap= "Cercle de corrélation des variables"}
+#Cercle de corrélation pour les variables on represente les coordonéees, la proximité d'une fleche au cercle indique le cos2
+fviz_pca_var(res.pca.station, axis = c(1,2),repel = TRUE, col.var = "cos2" , gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), axes = c(1,2), alpha.var = "contrib"
+             )
+#paramètre :
+
+# col.var = "cos2" : Color par rapport au cos2
+# col.var = "contrib" : Color par rapport au contribution
+# gradient.cols= ... : couleur qu'on veut
+# repel : évite le chevauchement de texte
+#alpha.var = "cos2" : transparence de la fleche selon le cos2
+#alpha.var = "contrib" : transparence de la fleche selon la contribution
+
+# col.var = ... : possible de colorer les variables par n’importe quelle variable continue personnalisée.
+
+#On peut aussi coloré par groupe de variable qualitative ou crée des groupes si on en à pas par exemple avec enutilisant l’algorithme de classification k-means :
+# res.km <- kmeans(var$coord, centers = 3, nstart = 25)
+# grp <- as.factor(res.km$cluster)
+# col.var = grp 
+
+#Argument en plus :
+
+# geom.var = "point", pour afficher uniquement les points 
+#geom.var = "text" pour afficher uniquement le texte d’annotation des points
+# geom.var = c("point", "text") pour afficher à la fois les points et le texte
+#geom.var = c("arrow", "text") pour afficher les flèches et les annotations (par défaut).
+
+#pointshape = ... : Forme du point (ggpubr ::show_point_shapes() pour plus de formes de points)
+#labelsize : taille du texte, par exemple : labelsize = 4.
+#pointsize : taille des points, par exemple : pointsize = 1.5.
+#arrowsize :  Contrôle l’épaisseur des flèches, par exemple : arrowsize =0.5.
+
+#axes.linetype = ... : utilisé pour spécifier le type de trait des axes.(toutes les valeurs possibles ggpubr ::show_line_types())
+#axes.linetype = "blank" pour les supprimé
+```
+
+On peut représenter l'ensemble de ces résultats dans le cercle des corrélation, ici on s'interesse au premier plan. Pour la qualité de représentation (cos2) on à une variation de couleur selon son importance sur le premier plan. On voit que les variables prixfof et piste sont celle qui sont le mieux représenter dans ce plan. la transparence des flèches indique la contributions. Par exemple la variable kmfond n'as pas une grande contribution sur le premier plan. Les fleches des variables prixfof et piste sont très proches ce qui indique un lien fort positif entre ces deux variables. Tandis que atmin et kmfond son pratiquemennt opposée ce qui signifie un lien fort négatif. 
+
+
+
+### Individus :
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind.station$coord,3)), caption = "Extrait des coordonées des individus")
+# Coordonnées des individus
+```
+
+On s'interesse maintenant aux individus. On commence par montrer leurs coordonées qu'il auront sur chasque dimension sur le tableau ci-dessus. Ici il n y a pas l'ensemble des individus représentés.
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind.station$cos2,3)), caption = "Extrait des cos2 des individus")
+# Qualité des individus
+```
+
+
+
+```{r,echo=FALSE,fig.cap= "Diagramme en barre des cos2 des individus"}
+#bar plot de la qualité de représentation (cos2) des individus
+fviz_cos2(res.pca.station, choice = "ind", axes = 1:2)
+```
+
+On regarde maintenant les qualités de représentation pour les différentes dimensions, qu'on retrouve dans le tableau. Le graphique nous illustre ces valeurs pour le premier plan, on voit que c'est l'individu 10 qui est le mieux représenter sur ce plan suivis du 1 et du 32. Nous allons les retrouver après dans le graphique.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind.station$contrib,3)), caption = "Extrait des contributions des individus")
+# Contributions des individus
+```
+
+```{r message=FALSE,echo=FALSE, fig.cap="Diagramme en barre de la contributions des individus"}
+#visualiser la contribution des individus aux deux premières composantes principales
+fviz_contrib(res.pca.station, choice = "ind", axes = 1:2)
+```
+
+
+On s'interesse maintenant à la comtributions des individus. On voit dans le tableau les contributions des individus sur les différents axes. Le graphique montre les individus qui contribue le plus au premier plan. L'individu 24 est celui qui à la plus forte contribution sur ce plan. Tout les individus au-dessus de la ligne poitillée rouge peuvent être considéré comme importante pour contribuer au premier plan.
+
+\newpage 
+
+```{r message=FALSE,echo=FALSE,fig.cap= "Nuage de points des individus"}
+#graphique des individus
+fviz_pca_ind(res.pca.station, col.ind = "cos2", pointsize = "contrib",gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07",'red',"black"), repel = TRUE)
+
+# col.ind = "cos2" : Color par rapport au cos2
+# col.ind = "contrib" : Color par rapport au contribution
+# gradient.cols  : couleur qu'on veut
+# pointsize = "cos2" : taille des point en fonction du cos2
+#pointshape = ... : Forme du point (ggpubr ::show_point_shapes() pour plus de formes de points)
+#fill = "#E7B800" : Color les cercle vide
+# repel : évite le chevauchement de texte
+
+#POUR MODIFIER LA TAILLE ET LA COULEUR DES POINTS EN FONCTION DU COS2 :
+#fviz_pca_ind(res.pca, col.ind = "cos2", pointsize = "cos2",gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE )
+
+#Argument en plus :
+
+#geom.ind = "point", pour afficher uniquement les points ;
+#geom.ind = "text" pour afficher uniquement le texte d’annotation des individus
+#geom.ind = c("point", "texte") pour afficher à la fois les points et le texte d’annotation (valeur par défaut)
+
+#labelsize : taille du texte, par exemple : labelsize = 4.
+#pointsize : taille des points, par exemple : pointsize = 1.5.
+
+#axes.linetype = ... : utilisé pour spécifier le type de trait des axes.(toutes les valeurs possibles ggpubr ::show_line_types())
+#axes.linetype = "blank" pour les supprimé
+
+```
+
+On peut maintenant tracer le nuage de points des individus sur le premier plan. Chaque points a une épaissseur proportionnelle  à sa contribution. On retrouve les individus 24, 10 et 16 qui sont les plus gros points et qui contribuent le plus. De plus nous pouvons voir une couleur plus chaude quand la qualité de représentation (cos2) est élevé, et inversement. Les individus 10,1,24,6,22,8, et 32 sont de couleur noir qui correspond à une très bonne qualité de représentation sur ce plan. 
+
+\newpage 
+
+### Variables & individus :
+
+```{r, echo=FALSE, fig.cap= "Bitplot"}
+#Création d’un biplot des individus et des variables.
+fviz_pca_biplot(res.pca.station,col.var = "#2E9FDF",col.ind = "#696969") 
+```
+
+
+Pour finir on va analyser les individus et les variables ensembles sur le premier plan, en suppersant les deux graphquiques précedent. Ils nous apprend qu'elle sont les individus qui ont une forte valeur selon les variables. Pour la variable altmax par exemple, les indivus 29, 12, 21, sont ceux qui ont une forte valeur pour cette variable. Et inversement, on peut savoir quels individus ont une faible valeur pour une variable. Les individus 27, 25, 26 par exemple sont opposée à la fleche de la variable kmfond, ceux qui indiques une faible valeur de ces individus pour cette variables.
+
+
+
+
+\newpage
+
+
+# Chapitre 4 : Analyse Factorielle des Correspondances (AFC)
+
+## Exercice 31
+
+Nous travaillons avec le jeu de données USArrests disponible dans R. Ces données contient des statistiques, en nombre d'arrestations pour 100 000 résidents pour agression, meurtre et viol dans chacun des 50 États américains en 1973. Le pourcentage de la population vivant dans des zones urbaines est également indiqué.
+
+Murder : Nombre d'arrestations pour meurtre (pour 100 000 résidents) 
+
+Assault : Nombre d'arrestations pour agression (pour 100 000 résidents)
+
+UrbanPop : Pourcentage de la population urbaine
+
+Rape : Nombre Arrestations pour viols (pour 100 000 résidents)
+
+L'objectif vas être de comparer les sortie de l'ACP sur ces données avec 3 fonctions différentes, PCA,prcomp, et princomp. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data(USArrests)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#PCA
+res.pca = PCA(USArrests , graph = FALSE)
+ind_pca = get_pca_ind(res.pca)
+
+#prcomp
+res.pca.prcomp <- prcomp(USArrests, scale = TRUE)
+ind_prcomp = get_pca_ind(res.pca.prcomp)
+
+#princomp
+res.pca.princomp <- princomp(USArrests, cor = TRUE)
+ind_princomp = get_pca_ind(res.pca.princomp)
+```
+
+
+```{r message=FALSE,echo=FALSE} 
+#coordonée
+kable(head(ind_pca$coord,5), caption = "Extrait des Coordonée avec PCA")
+kable(head(ind_prcomp$coord,5), caption = "Extrait des Coordonée avec prcomp")
+kable(head(ind_princomp$coord,5), caption = "Extrait des Coordonée avec princomp")
+```
+
+
+On remarque que les sorties des coordonées sont quasiment les mêmes entre PCA et princomp, il ya que sur la dimension 2 que le signe est différent. La fonction prcomp elle prend des valeurs totalement diférentes.
+
+```{r message=FALSE,echo=FALSE}
+#cos2
+kable(head(ind_pca$cos2,5), caption = "Extrait des Cos2 avec PCA")
+kable(head(ind_prcomp$cos2,5), caption = "Extrait des Cos2 avec prcomp")
+kable(head(ind_princomp$cos2,5), caption = "Extrait des Cos2 avec princomp")
+```
+
+Pour les qualité de représentation (cos2), les 3 fonctions apportent le même résultat.
+
+
+```{r message=FALSE,echo=FALSE}
+#contribution 
+kable(head(ind_pca$contrib,5), caption = "Extrait des Contribution avec PCA")
+kable(head(ind_prcomp$contrib,5), caption = "Extrait des Contribution avec prcomp")
+kable(head(ind_princomp$contrib,5), caption = "Extrait des Contribution avec princomp")
+```
+
+Et pour finir avec les contributions, les fonctions PCA et princomp ont la même sortie. tandis que prcomp propose des contributions différentes.
+
+
+
+
+## Exercice 32
+
+On considère un ensemble de 18282 individus pour lesquels on connaît la CSP, catégorie socio-professionnel (modalités agriculteur AGRI, cadre supérieur CADR, inactif INAC, et ouvrier OUVR) et le choix de l’hébergement pour les vacances, HEB (modalités camping CAMP, HOTEL,location LOCA, et résidence secondaire RESI).
+
+le but sera de représenter les éventuels liens entre la CSP et le type d’hébergement choisi HEB.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#donnée 
+
+AGRI = c( 239, 155 ,129 ,0, sum( 239, 155 ,129 ,0))
+CADR = c(1003, 1556, 1821, 1521, sum(1003, 1556, 1821, 1521))
+INAC = c(682, 1944 ,967, 1333, sum(682, 1944 ,967, 1333))
+OUVR = c(2594, 1124, 2176 ,1038, sum(2594, 1124, 2176 ,1038))
+
+TOTAL = c( 239+1003+682+2594 , 155+1556+1944+1124 , 129+1821+967+2176 , 1521+1333+1038, sum( 239+1003+682+2594+155+1556+1944+1124+129+1821+967+2176 +1521+1333+1038) )
+
+data = rbind(AGRI ,CADR, INAC,OUVR, TOTAL)
+
+colnames(data) = c("CAMP" ,"HOTEL", "LOCA" ,"RESI", "TOTAL")
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(data, caption = "Tableau de contingence de CSP et HEB" ) 
+```
+
+Voici le tableau de contingence que nous utiliserons pour notre analyse.
+
+```{r message=FALSE,echo=FALSE}
+chisq.test(data[1:4,1:4])
+```
+
+On commence par réaliser un test du khi2. On trouve statistique du khi-deux de 2067.9, et une pvaleur associés très proche de 0. Donc on rejette l'hypothèse d'indépendance, il y a un lien a étudier entre les CSP et HEB.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(data,MARGIN=1,STATS = data[,5],FUN = "/")*100,2)
+kable(PL,caption = "Tableau des distribution conditionnelle des HEB sachant la CSP (%)" )
+```
+
+On commence avec les profils lignes. On apprend par exemple dans ce tableau que 37.42% des ouvriers choisisent le camping comme herbergement de vacance.
+
+
+```{r message=FALSE,echo=FALSE}
+PC =round(sweep(data,MARGIN=2,STATS = data[5,],FUN = "/")*100,2)
+kable(PC,
+      caption = "Tableau des distribution conditionnelle des CSP sachant HEB  (%)")
+```
+
+Avec les profils colonnes, on voit que parmis ceux qui choisissent une résidence secondaire comme logement de vacance, 39.08% sont des cadres.
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.ca <- CA(data[1:4,1:4], graph = FALSE)
+row <- get_ca_row(res.ca)
+col = get_ca_col(res.ca)
+```
+
+On réalise ensuite l'AFC de nos données. On commence par étudiant l'inertie de la variance.
+
+```{r message=FALSE,echo=FALSE}
+#valeur propre
+eig.val <- get_eigenvalue (res.ca)
+kable(round(eig.val,3) , caption =  "Valeur propre")
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 100))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+18282*(sum(eig.val[,1]))
+```
+
+Voici le tableau et le graphique de nos valeur propre. Quand on fait la somme des valeurs propres multiplié par n, on retrouve bien la statistique du khi2.
+
+les deux premiers axes expliquent 99.9% de la variance totale. C’est quasiment la totalité. Les dimensions 1 et 2 expliquent environ 86,5% et 12.256% de l’inertie totale, respectivement. On conserve ces 2 dimensions.
+
+
+
+On trouve ensuite les différents indicateurs et commençons avec les modalités de CSP.
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(row$coord,3), caption = "Coordonnées des modalités de CSP") 
+```
+
+Le tableau nous montre les coordonnées que prendront les modalités de CSP sur les graphiques pour chaque dimension. 
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+# Cos2 : qualité de représentation
+kable(round(row$cos2,3), caption = "Cos2 des modalités de CSP") 
+
+#Les valeurs de cos2 sont comprises entre 0 et 1. La somme des cos2 pour les lignes sur toutes les dimensions de l’AFC estégale à 1.
+
+#Si un point ligne est bien représenté par deux dimensions, la somme des cos2 est proche de 1. Pour certainséléments lignes, plus de 2 dimensions sont nécessaires pour représenter parfaitement les données.
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des modalités de CSP"}
+#visualier le cos2 des points lignes sur toutes les dimensions
+corrplot(row$cos2, is.corr = FALSE)
+```
+
+On s'interesse ensuite aux qualités de représentation. On remarque dans le tableau et sur le graphique, que les inactifs et les ouvriers auront une bonne représentation sur l'axe 1.
+
+
+```{r message=FALSE,echo=FALSE }
+# Contributions
+kable(round(row$contrib,3), caption = "Contributions des modalités de CSP")
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de CSP"}
+#bar plot des contributions des lignes
+fviz_contrib (res.ca, choice = "row", axes = 1 :2, top = 10)
+# Contribution totale aux dimensions 1 et 2
+
+#top = ...  : écider de ne montrer que les lignes les plus contributives
+```
+
+Regardons maintenant les comtributions. Le tableau nous montre le poucentage de la contribution pour chaque axe. Avec le graphique, on peut voir que les modalité OUVR et INAC sont les plus importantes dans la définition de le premier plan. La ligne poitillée rouge correspond à la combtribution moyenne.
+
+
+
+Maintenant passons aux modalités de HEB.
+
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(col$coord,3), caption = "Coordonnées des modalités de HEB") 
+```
+
+Le tableau nous montre les coordonnées que prendront les modalités de HEB sur les graphiques pour chaque dimension. 
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+# Cos2 : qualité de représentation
+kable(round(col$cos2,3), caption = "Cos2 des modalités de HEB") 
+
+#Les valeurs de cos2 sont comprises entre 0 et 1. La somme des cos2 pour les lignes sur toutes les dimensions de l’AFC estégale à 1.
+
+#Si un point ligne est bien représenté par deux dimensions, la somme des cos2 est proche de 1. Pour certainséléments lignes, plus de 2 dimensions sont nécessaires pour représenter parfaitement les données.
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#visualier le cos2 des points lignes sur toutes les dimensions
+corrplot(col$cos2, is.corr = FALSE)
+```
+
+On s'interesse ensuite aux qualités de représentation. On remarque dans le tableau et sur le graphique, que les campings et les hotels auront une bonne représentation sur la dimension 1.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de HEB"}
+# Contributions
+kable(round(col$contrib,3), caption = "Contributions des modalités de HEB")
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de HEB"}
+#bar plot des contributions des lignes
+fviz_contrib (res.ca, choice = "col", axes = 1 :2, top = 10)
+# Contribution totale aux dimensions 1 et 2
+
+#top = ...  : écider de ne montrer que les lignes les plus contributives
+```
+
+
+Regardons maintenant les comtributions. Le tableau nous montre le poucentage de la contribution pour chaque axe. Avec le graphique, on peut voir que les modalités CAMP et HOTEL sont les plus importantes dans la définition de le premier plan. La ligne poitillée rouge correspond à la combtribution moyenne.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Bitplot"}
+#Biplot symétrique.
+fviz_ca_biplot (res.ca,repel = TRUE)
+
+# repel = TRUE : pour éviter le chevauchement de texte
+
+#map = "symbiplot" : Biplot symétrique. Ne conserve pas les métriques des lignes et des colonnes.
+```
+On peut ensuit tracer le biplot entre nos deux variables sur le premier plan. Les modalités de CSP sont représentées par des points bleus et les modalités de HEB par des triangles rouges.
+
+Quand on s'interesse uniquement aux modalité de CSP, on remarque les cadres et agriculteurs sont oposées, ce qui indique que leur profils s'oppose également.
+
+Pour les modalités de HEB, on trouve ce phénomène entre les résidences secondaire et les campings.
+
+La forme gernerale est un arc de cercle il y a donc un effet de Guttman. Il y a donc un ordre de nos modalités. On retrouve des groupe, on voit que les inactif sont liée au hotel, les cadres sont plus proche des résidences secondaire, et ouvrier opterons plus pour des campings. On peut imaginer qu'il y a un lien avec le cout de ces type d'herbergement.
+
+
+## Exercice 33 
+
+Dans cette partie, nous analyserons un tableau de contingence donnant les fréquences de 4 catégories de fumeur (en colonne) pour 5 catégories de salarié (en ligne) dans une entreprise fictive. Les catégories en ligne sont :
+
+— SM=Senior Managers,
+
+— JM=Junior Managers,
+
+— SE=Senior Employees,
+
+— JE=Junior Employees,
+
+— SC=Secretaries.
+
+```{r message=FALSE,echo=FALSE}
+data(smoke)
+kable(smoke, caption = "tableau de contingence de nos données")
+```
+
+Voici les données smokes que nous utiliserons.
+
+```{r message=FALSE,echo=FALSE}
+data_avec_marge = addmargins(as.matrix(smoke), FUN=sum)
+kable(data_avec_marge, caption = "Tableau de contingence avec marge")
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+c = addmargins(as.matrix(smoke), FUN=sum)[6,]
+r = addmargins(as.matrix(smoke), FUN=sum)[,5]
+```
+
+On peut ajouter les distributions marginales.  
+
+
+```{r message=FALSE,echo=FALSE}
+F_ = round((data_avec_marge/193)*100 , 3)
+kable(F_,caption = "Tableau de contingence en fréquence (%)") 
+```
+
+On peut mettre le tableau de nos données en pourcentage.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE, warning=FALSE}
+Z = chisq.test(smoke)$expected
+kable(Z, caption = "Tableau des effectif théoriques")
+```
+
+Et aussi calculer la tableau des effectifs théoriques, utile pour le test du khi2.
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(data_avec_marge,MARGIN=1,STATS = r,FUN = "/")*100,3)
+kable(PL, caption = "Profils lignes")
+```
+
+```{r message=FALSE,echo=FALSE}
+PC =round(sweep(data_avec_marge,MARGIN=2,STATS = c,FUN = "/")*100,3)
+kable(PC, caption = "Profils colonnes")
+```
+
+Voici les tableaux des profils ligne et colonnes. Avec les profils lignes on voit que 28% des secretaries fume "moyennement". Avec les profils colonnes, on remarque que parmis ceux qui ne fume pas, 40.98% sont Senior Employees. 
+
+\newpage
+
+On réalise ensuite l'AFC sur nos données.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.ca <- CA(smoke, graph = FALSE)
+row <- get_ca_row(res.ca)
+col <- get_ca_col(res.ca)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#valeur propre
+eig.val <- get_eigenvalue(res.ca)
+kable(round(eig.val,3) , caption = "Valeurs propres")
+```
+
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 100))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+On commence avec les valeurs propres. On voit dans le tableau et le graphique que le premier plan explique 99.5% de la variance totale. Les dimensions 1 et 2 expliquent environ 87.7% et 11.7% de l’inertie totale, respectivement. On conserve ces 2 dimensions.
+
+
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(row$coord,3), caption = "Coordonnées pour les catégories de salarié" ) 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(round(col$coord,3), caption = "Coordonnées pour les catégories de fumeur" ) 
+```
+
+On récupère ensuite les coordonnées pour tracer le bitplot. D'abord pour les catégories de salarié, puis pour les catégories de fumeur.
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+#Biplot symétrique.
+fviz_ca_biplot (res.ca,repel = TRUE)
+
+# repel = TRUE : pour éviter le chevauchement de texte
+#map = "symbiplot" : Biplot symétrique. Ne conserve pas les métriques des lignes et des colonnes.
+```
+
+Et on trace ensuite le bitplot. Les catégorie de salarié sont représentées par des points bleus et les catégories de fumeur par des triangles rouges. 
+
+On remarque qu'il n y pas de groupe qui se forme entre entre catégorie d'une meme variables, par contre pour les catégories de salarié on voit qu'il y a une opposition entre les Secretaries et les Junior Managers, ce qui s'ignifie que leurs profils s'oppose également.
+
+Quand on regarde les deux variables ensembles on voit des regroupements. Par exemple on se rend compte du lien qu'il y a entre les Senior Employees et les non fumeurs, aussi entre ce qui fume "moyenement" et les Junior Employees, et entre les gros fumeurs et les junior Managers. Nous avons réussi à bien ciblé les lien qui existe entre la catégorie de salarié et la catégorie de fumeur.
+
+
+\newpage
+
+## Exercice 34
+
+Il s’agit ici de proposer une méthodologie d’analyse textuelle pour identifier les auteurs de deux fragements de texte anonymes. On connaît pour chacun de ces fragments de texte la fréquence d’apparition de certaines lettres. On suppose également que les auteurs de ces textes appartiennent à la liste suivante d’écrivains du 17ème et 18ème siècles :
+Charles Darwin, René Descartes, Thomas Hobbes, Mary Shelley et Mark Twain. Ainsi, 3 échantillons de 1000 caractères de textes de ces auteurs ont été examinés. La fréquence d’apparition de 16 lettres pour chacun de ces 15 échantillons est donnée dans un tableau de contingence.
+
+Nous réaliserons l'AFC, puis nous recommencerons avec deux textes supplémentaires ou l'auteur n'est pas spécifier. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+ecrivain = read.csv("C:/Users/ilias/OneDrive/Bureau/AD/ecrivain.csv", row.names=1)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+chisq.test(ecrivain[1:15])
+```
+
+On commence par voir si il y a indépendance des données. On remarque que la pvaleur est proche de zéro, donc on rejette l'hypothèse d'indépendance. L'AFC est légitime.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#AFC 
+res.ca <- CA (ecrivain[1:15, ], graph = FALSE)
+res.ca.sup <-CA (ecrivain, row.sup = c(16,17), graph = FALSE)
+
+row <- get_ca_row(res.ca)
+col <- get_ca_col(res.ca)
+
+row.sup <- get_ca_row(res.ca.sup)
+col.sup <- get_ca_col(res.ca.sup)
+
+eig.val <- get_eigenvalue (res.ca)
+eig.val.sup <- get_eigenvalue (res.ca.sup)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(head(eig.val),3), caption = "Tableau des valeurs propres") 
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+head(eig.val.sup)
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 50))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+
+On commence par determiner le nombre d'axe. Avec le graphique et le tableau on remarque 
+que les quatre premiers axes expliquent 80.6% de la variance totale. C’est un pourcentage acceptable. On conservera donc 4 axes dans notre analyse. Les résultats sont assez similaire quand on ajoute les individus supplémentaire, on conservera 4 axes égalements.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(row$cos2, 3)) , caption = "Extrait des cos2 des auteurs" )
+kable(head(round(col$cos2, 3)) , caption   = "Extrait des cos2 des lettres" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des auteurs et des lettres"}
+layout(matrix(1:2,1), respect=TRUE)
+corrplot(row$cos2, is.corr = FALSE) 
+corrplot(col$cos2, is.corr = FALSE)
+```
+
+
+On s'interesse maintenant à la qualité de représentation (cos2). On remarque avec le graphique et le tableau que les texte de Mark Twain on la meilleur représentations sur l'axe 1. Pour les lettres, ce sont le R et W qui sont bien représenté sur l'axe 1, on peut aussi voir les contributions sur les autres axes.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(row$contrib, 3)) , caption = "Extrait des contributions des auteurs")
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(col$contrib, 3)) , caption = "Extrait des contributions des lettres")
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des auteurs "}
+fviz_contrib (res.ca, choice = "row", axes = 1 :2, top = 10)
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des lettres"}
+fviz_contrib (res.ca, choice = "col", axes = 1 :2, top = 10)
+```
+
+\newpage
+
+On regarde maintenant les contributions sur le premier plan, avec les graphiques et les tableaux ci-dessus. On voit que les auteurs qui contribuent le plus au premier plan sont Mark Twain et Charles Darwin. Pour les lettres on voit que ce sont les lettre W,C,L,D,R qui contribuent le plus au premier plan.
+
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Bitplot"}
+fviz_ca_biplot (res.ca,repel = TRUE)
+```
+
+
+Quand on trace le bitplot, on remarque qu'il y a des groupes d'auteur qui se forme, associer à certaine lettres. Par exemple pour Charles Darwin, on voit que les lettres B et C sont celle ou il y a le plus de lien. Les auteurs René Descartes et Mary Shelley sont très lier, il semble avoir la meme utilisations de lettre. Mark Twain se distingue des autres, il est lié à la lettre D et aussi le plus proche du W. Pour finir Thomas Hobbes se distingue aussi mais de façon moins prononcé, il se confond presque avec René Descartes et Mary Shelley. 
+
+\newpage
+
+On réalise ensuite l'AFC avec les textes supplémentaire. On trouve des contributions et des qualité de représentation très similaires aux résultats précedents.
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+head(row.sup$cos2)
+head(col.sup$cos2)
+#corrplot(row.sup$cos2, is.corr = FALSE)
+#corrplot(col.sup$cos2, is.corr = FALSE)
+head(row.sup$contrib)
+head(col.sup$contrib)
+
+#fviz_contrib (res.ca.sup, choice = "row", axes = 1 :2, top = 10)
+#fviz_contrib (res.ca.sup, choice = "col", axes = 1 :2, top = 10)
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot avec les textes supplémentaire"}
+fviz_ca_biplot (res.ca.sup,repel = TRUE)
+```
+
+On peut refaire un bitplot en incluant c'est deux textes. On voit que le texte un est fortement similaire à un texte de Mark Twain, alors que le texte 2 semble plus lié à un  
+texte de Thomas Hobbes. Nous alons classifier nos texte pour voir si cela se confirme.
+
+\newpage
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# Matrice des distances euclidienne entre individus, qui sert a tracer le dendrogramme
+d.ecrivain <- dist(row$coord[,1:4])
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# CAH - Critère de Ward
+#method = “ward.D2” correspond au vrai critère de Ward utilisant le carré de la distance
+cah.ward <- hclust(d.ecrivain,method="ward.D2")
+```
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Dendrogramme pour classifier nos auteur"}
+#dendrogramme
+plot(cah.ward, main= "Dendrogramme pour classifier nos auteurs", cex.main = 1, ylab= "", xlab= "") 
+rect.hclust(cah.ward,k=4) #rectangle pour différencier les classes ici en 4 classes
+```
+
+
+Le dendrogramme suivant nous montre la partition en 4 classes que nous offre nos données. Cela nous permet de confirmer les conclusions que nous avons tiré avec les bitplots. On voit qu'une classe est conposé des textes de t Mark Twain avec le texte 1 qui doit aussi 
+être un texte de cet auteur. La deuxième classe comprte les textes de Thomas Hobbes avec le textes 2 qui doit être issu de cet auteur. La troisième classes est composée de deux textes de Charles Darwin, notre classification n'as pas considèrer le troisième texte de Charles Darwin dans cet classe. En effet ce texte ce trouve dans la quatrième classe, avec les textes de Mary Shelley et René Descartes, qui comme nous l'avons dit ont tendance à utiliser les mêmes lettres. 
+
+
+\newpage 
+
+
+
+
+
+# Chapitre 5 : Analyse Factorielle des Correspondances Multiples (AFM)
+
+## Exercice 27
+
+Nous traiterons des données fictives ou 27 races de chiens sont décrites avec 7 variables qualitatives.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+load(file = "C:/Users/ilias/OneDrive/Bureau/AD/chien.rda")
+class(chiens)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+H <-subset(chiens,select=-fonction)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(chiens), caption = "Extrait des données chiens")
+```
+
+
+Voici un extrait des données, nous avons 6 variables ordinales, la taille, le	poids	, la velocite, l'intelligence, l'affectation et 	l'agressivité, et une variable fonction qui determine l'utilité des chiens, qui peut être utilite, chasse ou compagnie. Pour notre analyse nous ne conserverons que les variables ordinales.
+
+Nous allons réaliser un AFM, avec fonction comme variable supplémentaire.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.mca = MCA(chiens, quali.sup = 7, graph = FALSE)
+ind= get_mca_ind(res.mca)
+var =get_mca_var(res.mca)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#Valeurs propres
+eig.val <- get_eigenvalue(res.mca)
+kable(round(eig.val,3) , caption = "Valeurs propres" ) 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
+```
+
+On commence avec les valeurs propres, on voit avec le tableau qu'à partir de 4 dimensions, plus de 70% de l'inertie total, on conserve donc les 4 premiers axes. Avec le graphique ont voit que l'axe 1 explique 28.9%, l'axe 2 23.1%, l'axe 3 12.7% et l'axe 4 9.5%. 
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$coord,3)), caption = "Extrait des coordonnée des variables")
+```
+
+On se focalise d'abord sur les variables. On obtient dans le tableau ci-dessus les coordonnées afin de tracer le grapahique des variable. 
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$cos2,3)), caption = "Extrait des Cos2 des variables") 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des variables"}
+corrplot(var$cos2, is.corr=FALSE)
+```
+
+On se penche ensuite sur les qualités de représentations (cos2) des variables. On voit à l'aide du graphique et du tableau que une grande taille aura une bonne qualité de représentation sur l'axe 1. 
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(var$contrib,3)) , caption = "Extrait des contributions des variables" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions pour les variables"}
+fviz_contrib(res.mca, choice = "var", axes = 1 :2, top = 15)
+```
+
+Pour les contributions des variables sur le premier plan. On remarque avec le graphique et le tableau que un faible poids à la meilleur contribution au premier plan. Sur le graphique toutes les variables au dessus de la ligne pointillée rouge peuvent être considéré comme suffisament contribuant au premier plan.   
+
+On passe maintenant au individus.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$coord,3)), caption = "Extrait des coordonnées des individus")
+```
+
+D'abord avec le tableau des coordonnées.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$cos2,3)) , caption = "Extrait des Cos2 des individus") 
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des individus"}
+corrplot(ind$cos2, is.corr=FALSE)
+```
+
+Ensuite avec les qualités de représentations des individus. On ne voit par exemple avec le graphique que les teckel et les bull-dog ont la meilleur qualité de représentation sur la dimension 1.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(ind$contrib,3)) , caption = "Extrait des contributions des individus" )
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des individus"}
+fviz_contrib(res.mca, choice = "ind", axes = 1 :2, top = 15)
+```
+Pour les contributions des individu sur le premier plan. On remarque avec le graphique les chihuahua ont la meilleur contribution au premier plan. Toutes les individus au dessus de la ligne pointillée rouge peuvent être considéré comme suffisament contribuant au premier plan.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot"}
+fviz_mca_biplot (res.mca, repel = TRUE, ggtheme = theme_minimal ())
+```
+
+
+On peut enfin tracer le bitplot. Les individus sont en bleu, les variables sont en rouge
+et les variables supplémentaires sont en vert foncé.
+
+On  peut faire des liens entre les individus et les variables, tous les individus proche les un des autres peuvent être considéré comme des profils similaire. par exemple on voit que les boxers, les labradors, les dalmatiens et les espagn_bre sont silimaires avec une grande taille et une vitesse élevé. 
+
+Quand on regarde les variables supplémentaires, on voit qu'elles sont éloigner les une des autres surtout pour les chiens de compagnie qu'on arrive bien à distinguer des deux autres. 
+
+On vas s'intéresser au rapports de corrélations entre les variables qualitatives et les deux premièrescomposantes principales
+
+```{r message=FALSE,echo=FALSE}
+kable(round(var$eta2[,1:2] , 3 ) , caption = "Rapports de corrélations entre les variables qualitatives et les deux premières composantes principales" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des rapports de corrélation"}
+plot.MCA(res.mca,choix="var",invisible=c("ind"))
+```
+
+On voit avec le tableau et le graphique que le poids est la variable la plus corrélée à l'axe 1 tandis que le poids et la plus corrélée à l'axe 2. 
+
+
+On décide ensuite de rajouter des données manquantes a nos données, et nous refaisons une AFM, pour voir si elles sont prises en compte.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+chiensNA <- H
+chiensNA[1,1] <-NA
+chiensNA[2,2] <-NA
+
+res.mca.NA <-MCA(chiensNA,graph=FALSE)
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot avec les données manquantes"}
+fviz_mca_biplot (res.mca.NA, repel = TRUE, ggtheme = theme_minimal ())
+```
+
+Quand on refait le bitplot on voit bien des points supplémentaire avec .NA en sufixe, donc les données manquantes sont  prises en compte par la fonction MCA comme des individus classique, ce qui n'est pas correcte.
+
+
+On veut maintenant comparer l’ACM et l’AFC dans le cas particulier de deux variables qualitative. Noius allons réaliser l’AFC du tableau de contingence croisant les variables taille et poids, et comparer les valeurs propres.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+N <-table(H[,1:2])
+
+res.ca.N<-CA(N,graph=FALSE)
+res.mca.N<-MCA(H[,1:2],graph=FALSE)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(get_eigenvalue(res.ca.N),3), caption = "Valeurs propre de l'AFC" )
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(round(get_eigenvalue(res.mca.N),3), caption = "Valeurs propre de l'AFM" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+#relation entre les valeurs propres des deux analyses
+vpAFC <- res.ca.N$eig[,1]
+
+
+c = data.frame(c(round((1+sqrt(vpAFC))/2 , 3) ,round((1-sqrt(vpAFC))/2 , 3) ))
+rownames(c) = c("dim 1","dim 2","dim 4","dim 3")
+colnames(c)= c( "Valeurs propres")
+
+kable(c, caption = "Valeurs propres AFM avec l'AFC")
+```
+
+On retrouve un lien entre les valeurs propres de l'AFC et l'ACM. Quand on joue avec la racine carrée des les valeurs propres de l'AFC, on arrive à retouvé les valeurs propres de l'ACM. 
+
+$\frac {1+ \sqrt{vpDim1AFC} } {2} = vp \ dim1 \ ACM$
+
+$\frac {1+ \sqrt{vpDim2AFC} } {2} = vp \ dim2 \ ACM$
+
+$\frac {1- \sqrt{vpDim1AFC} } {2} = vp \ dim3 \ ACM$
+
+$\frac {1- \sqrt{vpDim2AFC} } {2} = vp \ dim4 \ ACM$
+
+Ou $vp$ sont les valeurs propres selon la méthode et la dimension.
+
+
+\newpage
+
+## Exercice 28
+
+
+Dans cette partie, nous allons présenter le package R missMDA. Il gére les données manquantes en ACP et en ACM, et de choisir le nombre de composantes par validation croisée. Nous décrirons les principales fonctionnalités de ce package, avec à chaque fois une explication de la méthode.
+
+
+
+Overimpute : Évaluez l'ajustement de la distribution prédictive après avoir effectué une imputation multiple
+
+estim_ncpPCA : Estime le nombre de dimensions pour l'Analyse en Composantes Principales par validation croisée
+
+MIFAMD : effectue des imputations multiples pour des données mixtes (continues et catégorielles) en utilisant l'analyse factorielle de données mixtes.
+
+estim_ncpMultilevel : Estimez le nombre de dimensions pour la composante principale multiniveau (ACP multiniveau, AMC multiniveau ou analyse factorielle multiniveau de données mixtes) par validation croisée.
+
+estim_ncpMCA : Estimer le nombre de dimensions pour l'Analyse des Correspondances Multiples par validation croisée
+
+MIPCA : Réalise une imputation multiple avec un modèle ACP. Peut être utilisé comme étape préliminaire pour effectuer une imputation multiple dans l'ACP.
+
+MIMCA : Effectue des imputations multiples pour des données catégorielles en utilisant l'analyse des correspondances multiples.
+
+estim_ncpFAMD : Estime le nombre de dimensions pour l'Analyse Factorielle de Données Mixtes par validation croisée
+
+prelim : Cette fonction effectue des opérations de regroupement et de tri sur un ensemble de données imputées à plusieurs reprises. Elle crée un objet mids qui est nécessaire à l'entrée de with.mids, qui permet d'analyser l'ensemble de données imputées à plusieurs reprises. L'ensemble de données incomplètes d'origine doit être disponible pour que nous sachions où se trouvent les données manquantes.
+
+
+imputeFAMD : Imputez les valeurs manquantes d'un ensemble de données mixtes (avec des variables continues et catégorielles) en utilisant la méthode des composantes principales "analyse factorielle pour données mixtes" (FAMD). Peut être utilisé comme une étape préliminaire avant d'exécuter FAMD sur un ensemble de données incomplet.
+
+imputeMFA : Impute un jeu de données avec des variables structurées en groupes de variables (groupes de variables continues ou catégorielles).
+
+imputeMCA : Imputez les valeurs manquantes d'un ensemble de données catégoriques en utilisant l'analyse des correspondances multiples (ACM). Peut être utilisé comme une étape préliminaire avant d'effectuer l'ACM sur un ensemble de données incomplet.
+
+
+imputeCA : Imputez les entrées manquantes d'un tableau de contingence en utilisant l'analyse des correspondances (AC). Peut être utilisé comme une étape préliminaire avant d'effectuer l'AC sur un ensemble de données incomplet.
+
+imputePCA : Impute les valeurs manquantes d'un jeu de données avec le modèle d'analyse en composantes principales. Peut être utilisé comme une étape préliminaire avant d'effectuer une ACP sur un jeu de données complet.
+
+imputeMultilevel : Imputez les valeurs manquantes d'un ensemble de données mixtes multi-niveaux (avec une variable qui regroupe les individus, et avec des variables continues et catégorielles) en utilisant la méthode des composantes principales "analyse factorielle multi-niveaux pour données mixtes".
+
+plot.MIMCA : À partir des ensembles de données imputées multiples, la fonction trace des graphiques pour les individus, les catégories et les dimensions pour l'analyse des correspondances multiples (ACM).
+
+
+plot.MIPCA : À partir des ensembles de données imputées multiples, la fonction trace des graphiques pour les individus, les variables et les dimensions pour l'analyse en composantes principales (ACP).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

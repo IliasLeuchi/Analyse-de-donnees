@@ -1,0 +1,360 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    
+    df_print: paged
+---
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(ggpubr)
+library(lattice)
+library(car)
+library(corrplot)
+```
+
+## exercice 22
+
+Nous utiliserons des données sont extraites d’un reccueil de données issu d’une enquête portant sur une population d’enseignants de collèges. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Donnee sur enseignant
+library(readxl)
+data<- read_excel("C:/Users/ilias/OneDrive/Bureau/AD/Donnees sur enseignants.xls")
+attach(data)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(head(data),caption = "Extrait des données")
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+dim(data)
+#168 individus , 11 variables 
+names(data)
+#Nom des variables
+```
+
+Le tableau 1 est un extrait des données que nous utiliserons. Il y a un total de11 variables, pour 168 individus. La plupart des variables sont explicites. Le salaire est exprimé en euros, l’âge et l’ancienneté en années. Le stress, l’estime de soi et la satisfaction au travail sont mesurés sur des échelles allant de 0 à 50 suivant des techniques appropriées.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+summary(data)
+```
+
+```{r message=FALSE,echo=FALSE}
+kable(summary(data[,7]),caption = "Résumé statistique du salaire")
+```
+
+Quand on s'interesse de près au salaire dans nos données, grâce au tableau 2, on trouve un minimum de 1200€, un maximum de 2200€, et un salaire médian de 1720€.
+
+
+### Croisement qualitatif vs qualitatif : Sexe et  EtatCivil
+
+Essayons de croisée deux variables, avec le sexe et l'état civil.
+
+```{r message=FALSE,echo=FALSE}
+#Tableau de contingence en effectif 
+TDC_E_1 =table( Sexe,EtatCivil)
+TDC_E =addmargins(TDC_E_1,FUN = sum)
+
+kable(TDC_E, caption = "Tableau de contingence entre le sexe et l'état civil") #3
+```
+
+On commence par croiser les effectifs de nos deux variables dans le tableau 3. On apprend par exemple que sur les 168 hommes de nos données, 89 sont mariés.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Tableau de contingence en fréquence 
+TDC_F_1 =round(prop.table(TDC_E_1),3)
+TDC_F =addmargins(TDC_F_1,FUN =sum)
+```
+
+```{r message=FALSE,echo=FALSE}
+#Tableau de contingence en pourcentage 
+TDC_P_1 =round(prop.table(TDC_E_1)*100,3)
+TDC_P =addmargins(TDC_P_1,FUN =sum)
+
+kable(round(TDC_P,2), caption = "Tableau des fréquences croisée entre le sexe et l'état civil en %") #4
+
+```
+
+Le tableau 4 nous donnes les pourcentages du croisement entre nos deux variables. On remarque que 73.84% de nos individus sont mariés dont 22.62% sont des femmes.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Ballonplot du croisement entre sexe et état civil"}
+layout(matrix(1:2, 1), respect=TRUE)
+
+ggballoonplot(TDC_E, col = "white",fill = "value", color = "lightgray",
+              size = 10, main = "Ballonplot du croisement entre sexe et état civil", cex.main = 1,
+              show.label = TRUE) +
+  gradient_fill(c("blue", "white", "red"))
+
+```
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Diagramme en barre du croisement entre sexe et état civil"}
+barplot(TDC_P_1, beside=TRUE, col= c("pink",4),
+        ylim = c(0,60),ylab = "pourcentage",
+        main = "Diagramme en barre du croisement entre sexe et état civil",
+        cex.main = 1,legend.text = c("Femme","Homme")) #2
+```
+
+\newpage
+Nous pouvons rendre graphique les résultats de nos tableau de contingence, comme le font les figures 1 et 2.
+
+
+```{r message=FALSE,echo=FALSE}
+#Profil Collone 
+PC = round(sweep(TDC_E, MARGIN=2,STATS = t(TDC_E)[,3],FUN = "/")*100,2)
+
+kable(PC,caption = "Distribution conditionnelle du sexe sachant l'état civil en %") #5
+```
+
+Le tableau 5 nous apprend que parmis nos individus veufs, 71.3% sont des femmes. 
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(TDC_E, MARGIN=1,STATS = TDC_E[,5],FUN = "/")*100,2) #6
+
+kable(PL,caption = "Distribution conditionnelle de l'état civil sachant le sexe en %")
+```
+
+Le tableau 6 nous dit que parmis nos individus femmes, 13.21% sont célibaraires.
+
+
+```{r message=FALSE,echo=FALSE, warning=FALSE}
+test_khi2 = chisq.test(TDC_E)
+test_khi2
+```
+
+Quand on réalise le test pour savoir s'il ya indépendance entre nos deux variables, on trouve une p_valeur plutôt grande, ce qui nous ne permet pas de rejet H0, il y a indépendance entre le sexe et l'état civil.
+
+```{r message=FALSE,echo=FALSE}
+#tableau des effectifs théoriques
+TET = round(test_khi2$expected,2)
+kable(TET, caption = "Tableau des effectifs théoriques") #7
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+sum(  ( (TDC_E-TET)**2 ) /TET   )
+
+ddl = 1*3
+qchisq(0.95,ddl)
+```
+
+Grâce au tableau 7 on peut obtenir la satistique de notre test. On trouve 5.69 ce résultat est visible dans les sorties de notre de test. Le quantile de la lois de khi2 est de 7.81, plus grand que notre stat de test. On ne rejet donc pas l'hypothèse d'indépendance.
+
+
+### Croisement quantitatif vs qualitatif : Stress vs EtatCivil
+
+maintenant croisons l'état civil avec une autre variable qui est le stress.
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Stress)),caption = "Statistique élémentaire de la variable stress")  #8
+```
+
+Regardons les statistiques élémentaires de cette variable. Avec le tableau 8 on remarque par exemple que le stress moyen est de 18.20. 
+
+```{r message=FALSE,echo=FALSE,fig.cap= "Boite à moustache de la variable stress"}
+boxplot(Stress, main= "Boite à moustache de la variable stress", col= 4, cex.main =1) #3
+```
+
+Illustrons ces statistiques. Sur la figure 3 on voit que cette variable est bien distribuer autour de la médiane. On voit également qu'il y a 2 valeurs aberrantes.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#Nclass sert à savoir le nombre de découpage optimal selon une méthode 
+#mais ne crée pas des classes.
+
+decoup_stress =cut(Stress,breaks = 5)
+#5 classes de meme amplitude
+
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_E_2=table(EtatCivil,decoup_stress)
+kable(addmargins(TDC_E_2,FUN = sum), 
+      caption = "Croisement entre l'état civil et le stress" ) #9
+```
+
+Pour analyser le croisement entre ces deux variables il faut au préalable découper en classe la variable stess. Nous la découpons en 5 classes de même amplitude. Une fois réaliser nous pouvons faire le tableau 9 du croisement des effectifs. On apprend par exemple que 58 individus mariés on un stress entre 15 et 20.6.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+TDC_F_2=round(prop.table(TDC_E_2),3)
+addmargins(TDC_F_2,FUN = sum) 
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_P_2=round(prop.table(TDC_E_2)*100,3)
+kable(addmargins(TDC_P_2,FUN = sum), caption = "Fréquence croisée en %" ) #10
+```
+
+Le tableau 10 nous apprend que 2.38% des célibataires on un stress entre 9.33 et 15.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Boites à moustache du stress selon l'état civil"}
+boxplot(Stress~EtatCivil,col=2:10,main="Boites à moustache du stress selon l'état civil", cex.main =1) #4
+```
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Histograme du stress selon l'état civil"}
+histogram(~Stress | EtatCivil, col = 4, main = "Histograme du stress selon l'état civil", cex.main = 1) #5
+```
+
+\newpage
+
+
+On remarque avec la figure 4 et 5 que la distribution du stress entre les célibataire et les divorcés est assez similaire. Pour les mariés on retrouve une distribution étendu qui vas prendre des valeurs plus grande. Alors que pour les veufs on retrouve un étendu plus faible, les valeur du stress pour les veufs est plus faible.
+
+
+
+```{r message=FALSE,echo=FALSE}
+tapply(Stress, EtatCivil, summary, na.rm=TRUE) 
+```
+
+On peut regarder les statistiques élémentaires du stress selon l'état civil dans le tableau 11. On voit par la médiane pour les veufs est plus faible que pour les autres groupes. On retrouve les mêmes résutats que la figure 3.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+require(BioStatR)
+eta2(Stress,EtatCivil) #rapport de correlation
+
+#7.4 % de la variabilité du stress est expliquée par l'état civil.
+```
+
+On peut calculer le rapport de corrélation entre nos deux variables. On trouve 0.075. Cela nous dit que 7.5% de la variabilité du stress est expliquée par l'état civil.
+
+
+```{r message=FALSE,echo=FALSE}
+#H0 : Différence non significative
+#aov(Stress ~ EtatCivil)
+summary(aov(Stress ~ EtatCivil))
+
+#Pvaleur petite : rejet de H0, il y a une difference entre la valeur du stress selon les differents l'état civil.
+```
+
+On réalise un test pour si il y a une différence entre les états civils pour la valeur du stress. On trouve une pvaleur inférieur à 0.05, on peut rejeter l'hypothèse 0 et dire qu'il y a une différence entre la valeur du stress selon les differents états civils.
+
+### Croisement quantitatif vs quantitatif : Age vs Satisfaction
+
+On vas maintenant voir le croisement entre les variables age et satisfaction. 
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Satisfaction)), caption = "Statistique élémentaire de la satisfaction")
+#11
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(t(summary(Age)), caption = "Statistique élémentaire de l'age") #12
+```
+
+Les tableaux 11 et 12 nous donnes les indicateurs statistiques sur nos variable. On remarque pae exemple que la satisfactions moyenne et de 20.43 et celle de l'age est de 41.99.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Boxplot des variable satisfaction et age"}
+layout(matrix(1:2, 1), respect=TRUE)
+boxplot(Satisfaction, col = 4, main ="Boxplot de la satisfaction", cex.main = 1, ylim=c(0,60))
+
+boxplot(Age, col = 4, main ="Boxplot de l'age", cex.main = 1, ylim=c(0,60))
+#6
+```
+
+\newpage
+
+On peut rend visuel nos résultats comme dans la figure 6. On remarque que, pour les deux variables, il n y pas de valeur abérante.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+decoup_Satisfaction = cut(Satisfaction,breaks = 5)
+decoup_age = cut(Age, breaks = 4)
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_E_3_1=table(decoup_Satisfaction,decoup_age)
+TDC_E_3=addmargins(TDC_E_3_1,FUN = sum)
+kable(TDC_E_3, caption = "Tableau de contingence entre la satisfaction et l'age") #13
+```
+
+Nous avons 2 variables quantitatives, il faut donc crée des classes chacune d'entre elle afin de pouvoir les croiser. Quand on croise les effectifs, on obtient la distribution résumé dans le tableau 13. On apprend par exemple que 38 de nos individus entre 33 et 41 ans on une satisfaction compris ente 10.8 et 17.7. Si on est bien attentif on remarque que quand l'age augmente, la satisfaction augmente également. Regardons cela dans un graphique.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+TDC_F_3=round(prop.table(TDC_E_3_1),3)
+addmargins(TDC_F_3,FUN = sum)
+```
+
+```{r message=FALSE,echo=FALSE}
+TDC_P_3=round(TDC_F_3*100,3)
+TDC_P_3=addmargins(TDC_P_3,FUN = sum)
+kable(TDC_P_3, caption = "") #14
+```
+
+Avant cela regardons d'autre facon d'illustrée le croisement entre nos deux variables. Avec le tableau 14 on retrouve le pourcentage de chaque croisement.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "ballon plot de la satisfaction croisée avec l'age"}
+ggballoonplot(TDC_E_3 ,fill = "value", col =4 , main= "ballon plot de la satisfaction croisée avec l'age", cex.main  = 1 ) #7
+```
+
+\newpage
+
+Ou encore avec la figure 7 qui donne un cercle plus ou moins gros selon l'effectif du croisement.
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Nuage de points de la satisfaction selon l'age"}
+plot(Satisfaction~Age, pch = 20, col=4, main = "Nuage de points de la satisfaction selon l'age") #8
+```
+
+\newpage
+
+Graphiquement on se rend compte directement de la liaison entre nos deux variables. La figure 8 nous montre un relation qui est croissante est positif. On voit un point qui ne se comporte pas comme les autres, un intrus.
+
+
+```{r message=FALSE,echo=FALSE, fig.cap= "Nuage de points de la satisfaction croisée à l'age selon le sexe"}
+scatterplot(Satisfaction~Age|Sexe,
+            regLine =FALSE, grid =F,smooth = FALSE, legend = FALSE,
+            main ="Nuage de points de la satisfaction croisée à l'age selon le sexe", cex.main = 1,
+            col=c("pink",4),pch=c(2,3))
+
+legend("topleft",c("Femme","Homme"),cex=.8, col=c("pink",4),pch=c(2,3), text.font=4) #8
+```
+
+\newpage
+
+On peut ajouter l'information sur le sexe comme sur la figure 9. Le sexe ne semble pas avoir d'influence sur notre croisement de la satisfaction et de l'age.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+cov_SxA = mean(Age*Satisfaction) - (mean(Age)*mean(Satisfaction))
+cov_SxA
+cov(Satisfaction,Age)
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+cov(Satisfaction,Age)/(sd(Satisfaction)*sd(Age))
+cor(Satisfaction,Age)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(cor(cbind(data[6:10],Age)),3), caption = "Matrice des corrélations") #15
+```
+
+Le tableau 15 nous donne les lien entre chaque variable. Plus le chiffre est proche de 1 plus le liens est fort positivement, plus il est proche de -1 plus le lien est fort mais négativement. Vers 0 la relation est faible. Pour la satisfaction et l'age on voit un coefficient très proche de 1, ce qui confirme les résultats vue précedement. 
+
+```{r message=FALSE,echo=FALSE, fig.cap= "corrélogramme"}
+corrplot(cor(data[6:10]), type="upper", order="hclust", 
+         tl.col="black", tl.srt=45, cex.main=1) #9
+```
+
+On peut illustrée ce tableau comme le montre la figure 10. Plus le cercle est bleu plus la corrélation est forte, comme par exemple avec l'ancienneté et la satisfaction.
+
+
+
+
+
+
+
+
+

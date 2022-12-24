@@ -1,0 +1,564 @@
+---
+output:
+  pdf_document:
+    extra_dependencies : ["float"]
+---
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+library(knitr)
+library(car)
+library(MASS)
+library(ggpubr)
+library(lattice)
+library(corrplot)
+library("FactoMineR")
+library("factoextra")
+library(ca)
+```
+
+# Chapitre 4 : Analyse Factorielle des Correspondances (AFC)
+
+## Exercice 31
+
+Nous travaillons avec le jeu de données USArrests disponible dans R. Ces données contient des statistiques, en nombre d'arrestations pour 100 000 résidents pour agression, meurtre et viol dans chacun des 50 États américains en 1973. Le pourcentage de la population vivant dans des zones urbaines est également indiqué.
+
+Murder : Nombre d'arrestations pour meurtre (pour 100 000 résidents) 
+
+Assault : Nombre d'arrestations pour agression (pour 100 000 résidents)
+
+UrbanPop : Pourcentage de la population urbaine
+
+Rape : Nombre Arrestations pour viols (pour 100 000 résidents)
+
+L'objectif vas être de comparer les sortie de l'ACP sur ces données avec 3 fonctions différentes, PCA,prcomp, et princomp. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+data(USArrests)
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#PCA
+res.pca = PCA(USArrests , graph = FALSE)
+ind_pca = get_pca_ind(res.pca)
+
+#prcomp
+res.pca.prcomp <- prcomp(USArrests, scale = TRUE)
+ind_prcomp = get_pca_ind(res.pca.prcomp)
+
+#princomp
+res.pca.princomp <- princomp(USArrests, cor = TRUE)
+ind_princomp = get_pca_ind(res.pca.princomp)
+```
+
+
+```{r message=FALSE,echo=FALSE} 
+#coordonée
+kable(head(ind_pca$coord,5), caption = "Extrait des Coordonée avec PCA")
+kable(head(ind_prcomp$coord,5), caption = "Extrait des Coordonée avec prcomp")
+kable(head(ind_princomp$coord,5), caption = "Extrait des Coordonée avec princomp")
+```
+
+
+On remarque que les sorties des coordonées sont quasiment les mêmes entre PCA et princomp, il ya que sur la dimension 2 que le signe est différent. La fonction prcomp elle prend des valeurs totalement diférentes.
+
+```{r message=FALSE,echo=FALSE}
+#cos2
+kable(head(ind_pca$cos2,5), caption = "Extrait des Cos2 avec PCA")
+kable(head(ind_prcomp$cos2,5), caption = "Extrait des Cos2 avec prcomp")
+kable(head(ind_princomp$cos2,5), caption = "Extrait des Cos2 avec princomp")
+```
+
+Pour les qualité de représentation (cos2), les 3 fonctions apportent le même résultat.
+
+
+```{r message=FALSE,echo=FALSE}
+#contribution 
+kable(head(ind_pca$contrib,5), caption = "Extrait des Contribution avec PCA")
+kable(head(ind_prcomp$contrib,5), caption = "Extrait des Contribution avec prcomp")
+kable(head(ind_princomp$contrib,5), caption = "Extrait des Contribution avec princomp")
+```
+
+Et pour finir avec les contributions, les fonctions PCA et princomp ont la même sortie. tandis que prcomp propose des contributions différentes.
+
+
+
+
+## Exercice 32
+
+On considère un ensemble de 18282 individus pour lesquels on connaît la CSP, catégorie socio-professionnel (modalités agriculteur AGRI, cadre supérieur CADR, inactif INAC, et ouvrier OUVR) et le choix de l’hébergement pour les vacances, HEB (modalités camping CAMP, HOTEL,location LOCA, et résidence secondaire RESI).
+
+le but sera de représenter les éventuels liens entre la CSP et le type d’hébergement choisi HEB.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#donnée 
+
+AGRI = c( 239, 155 ,129 ,0, sum( 239, 155 ,129 ,0))
+CADR = c(1003, 1556, 1821, 1521, sum(1003, 1556, 1821, 1521))
+INAC = c(682, 1944 ,967, 1333, sum(682, 1944 ,967, 1333))
+OUVR = c(2594, 1124, 2176 ,1038, sum(2594, 1124, 2176 ,1038))
+
+TOTAL = c( 239+1003+682+2594 , 155+1556+1944+1124 , 129+1821+967+2176 , 1521+1333+1038, sum( 239+1003+682+2594+155+1556+1944+1124+129+1821+967+2176 +1521+1333+1038) )
+
+data = rbind(AGRI ,CADR, INAC,OUVR, TOTAL)
+
+colnames(data) = c("CAMP" ,"HOTEL", "LOCA" ,"RESI", "TOTAL")
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(data, caption = "Tableau de contingence de CSP et HEB" ) 
+```
+
+Voici le tableau de contingence que nous utiliserons pour notre analyse.
+
+```{r message=FALSE,echo=FALSE}
+chisq.test(data[1:4,1:4])
+```
+
+On commence par réaliser un test du khi2. On trouve statistique du khi-deux de 2067.9, et une pvaleur associés très proche de 0. Donc on rejette l'hypothèse d'indépendance, il y a un lien a étudier entre les CSP et HEB.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(data,MARGIN=1,STATS = data[,5],FUN = "/")*100,2)
+kable(PL,caption = "Tableau des distribution conditionnelle des HEB sachant la CSP (%)" )
+```
+
+On commence avec les profils lignes. On apprend par exemple dans ce tableau que 37.42% des ouvriers choisisent le camping comme herbergement de vacance.
+
+
+```{r message=FALSE,echo=FALSE}
+PC =round(sweep(data,MARGIN=2,STATS = data[5,],FUN = "/")*100,2)
+kable(PC,
+      caption = "Tableau des distribution conditionnelle des CSP sachant HEB  (%)")
+```
+
+Avec les profils colonnes, on voit que parmis ceux qui choisissent une résidence secondaire comme logement de vacance, 39.08% sont des cadres.
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.ca <- CA(data[1:4,1:4], graph = FALSE)
+row <- get_ca_row(res.ca)
+col = get_ca_col(res.ca)
+```
+
+On réalise ensuite l'AFC de nos données. On commence par étudiant l'inertie de la variance.
+
+```{r message=FALSE,echo=FALSE}
+#valeur propre
+eig.val <- get_eigenvalue (res.ca)
+kable(round(eig.val,3) , caption =  "Valeur propre")
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 100))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+18282*(sum(eig.val[,1]))
+```
+
+Voici le tableau et le graphique de nos valeur propre. Quand on fait la somme des valeurs propres multiplié par n, on retrouve bien la statistique du khi2.
+
+les deux premiers axes expliquent 99.9% de la variance totale. C’est quasiment la totalité. Les dimensions 1 et 2 expliquent environ 86,5% et 12.256% de l’inertie totale, respectivement. On conserve ces 2 dimensions.
+
+
+
+On trouve ensuite les différents indicateurs et commençons avec les modalités de CSP.
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(row$coord,3), caption = "Coordonnées des modalités de CSP") 
+```
+
+Le tableau nous montre les coordonnées que prendront les modalités de CSP sur les graphiques pour chaque dimension. 
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+# Cos2 : qualité de représentation
+kable(round(row$cos2,3), caption = "Cos2 des modalités de CSP") 
+
+#Les valeurs de cos2 sont comprises entre 0 et 1. La somme des cos2 pour les lignes sur toutes les dimensions de l’AFC estégale à 1.
+
+#Si un point ligne est bien représenté par deux dimensions, la somme des cos2 est proche de 1. Pour certainséléments lignes, plus de 2 dimensions sont nécessaires pour représenter parfaitement les données.
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des modalités de CSP"}
+#visualier le cos2 des points lignes sur toutes les dimensions
+corrplot(row$cos2, is.corr = FALSE)
+```
+
+On s'interesse ensuite aux qualités de représentation. On remarque dans le tableau et sur le graphique, que les inactifs et les ouvriers auront une bonne représentation sur l'axe 1.
+
+
+```{r message=FALSE,echo=FALSE }
+# Contributions
+kable(round(row$contrib,3), caption = "Contributions des modalités de CSP")
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de CSP"}
+#bar plot des contributions des lignes
+fviz_contrib (res.ca, choice = "row", axes = 1 :2, top = 10)
+# Contribution totale aux dimensions 1 et 2
+
+#top = ...  : écider de ne montrer que les lignes les plus contributives
+```
+
+Regardons maintenant les comtributions. Le tableau nous montre le poucentage de la contribution pour chaque axe. Avec le graphique, on peut voir que les modalité OUVR et INAC sont les plus importantes dans la définition de le premier plan. La ligne poitillée rouge correspond à la combtribution moyenne.
+
+
+
+Maintenant passons aux modalités de HEB.
+
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(col$coord,3), caption = "Coordonnées des modalités de HEB") 
+```
+
+Le tableau nous montre les coordonnées que prendront les modalités de HEB sur les graphiques pour chaque dimension. 
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+# Cos2 : qualité de représentation
+kable(round(col$cos2,3), caption = "Cos2 des modalités de HEB") 
+
+#Les valeurs de cos2 sont comprises entre 0 et 1. La somme des cos2 pour les lignes sur toutes les dimensions de l’AFC estégale à 1.
+
+#Si un point ligne est bien représenté par deux dimensions, la somme des cos2 est proche de 1. Pour certainséléments lignes, plus de 2 dimensions sont nécessaires pour représenter parfaitement les données.
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#visualier le cos2 des points lignes sur toutes les dimensions
+corrplot(col$cos2, is.corr = FALSE)
+```
+
+On s'interesse ensuite aux qualités de représentation. On remarque dans le tableau et sur le graphique, que les campings et les hotels auront une bonne représentation sur la dimension 1.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de HEB"}
+# Contributions
+kable(round(col$contrib,3), caption = "Contributions des modalités de HEB")
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Visualisation des contributions des modalités de HEB"}
+#bar plot des contributions des lignes
+fviz_contrib (res.ca, choice = "col", axes = 1 :2, top = 10)
+# Contribution totale aux dimensions 1 et 2
+
+#top = ...  : écider de ne montrer que les lignes les plus contributives
+```
+
+
+Regardons maintenant les comtributions. Le tableau nous montre le poucentage de la contribution pour chaque axe. Avec le graphique, on peut voir que les modalités CAMP et HOTEL sont les plus importantes dans la définition de le premier plan. La ligne poitillée rouge correspond à la combtribution moyenne.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center",fig.cap="Bitplot"}
+#Biplot symétrique.
+fviz_ca_biplot (res.ca,repel = TRUE)
+
+# repel = TRUE : pour éviter le chevauchement de texte
+
+#map = "symbiplot" : Biplot symétrique. Ne conserve pas les métriques des lignes et des colonnes.
+```
+On peut ensuit tracer le biplot entre nos deux variables sur le premier plan. Les modalités de CSP sont représentées par des points bleus et les modalités de HEB par des triangles rouges.
+
+Quand on s'interesse uniquement aux modalité de CSP, on remarque les cadres et agriculteurs sont oposées, ce qui indique que leur profils s'oppose également.
+
+Pour les modalités de HEB, on trouve ce phénomène entre les résidences secondaire et les campings.
+
+La forme gernerale est un arc de cercle il y a donc un effet de Guttman. Il y a donc un ordre de nos modalités. On retrouve des groupe, on voit que les inactif sont liée au hotel, les cadres sont plus proche des résidences secondaire, et ouvrier opterons plus pour des campings. On peut imaginer qu'il y a un lien avec le cout de ces type d'herbergement.
+
+
+## Exercice 33 
+
+Dans cette partie, nous analyserons un tableau de contingence donnant les fréquences de 4 catégories de fumeur (en colonne) pour 5 catégories de salarié (en ligne) dans une entreprise fictive. Les catégories en ligne sont :
+
+— SM=Senior Managers,
+
+— JM=Junior Managers,
+
+— SE=Senior Employees,
+
+— JE=Junior Employees,
+
+— SC=Secretaries.
+
+```{r message=FALSE,echo=FALSE}
+data(smoke)
+kable(smoke, caption = "tableau de contingence de nos données")
+```
+
+Voici les données smokes que nous utiliserons.
+
+```{r message=FALSE,echo=FALSE}
+data_avec_marge = addmargins(as.matrix(smoke), FUN=sum)
+kable(data_avec_marge, caption = "Tableau de contingence avec marge")
+```
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+c = addmargins(as.matrix(smoke), FUN=sum)[6,]
+r = addmargins(as.matrix(smoke), FUN=sum)[,5]
+```
+
+On peut ajouter les distributions marginales.  
+
+
+```{r message=FALSE,echo=FALSE}
+F_ = round((data_avec_marge/193)*100 , 3)
+kable(F_,caption = "Tableau de contingence en fréquence (%)") 
+```
+
+On peut mettre le tableau de nos données en pourcentage.
+
+\newpage
+
+```{r message=FALSE,echo=FALSE, warning=FALSE}
+Z = chisq.test(smoke)$residual
+kable(Z, caption = "Tableau des effectif théoriques")
+```
+
+Et aussi calculer la tableau des effectifs théoriques, utile pour le test du khi2.
+
+```{r message=FALSE,echo=FALSE}
+#Profil ligne
+PL =round(sweep(data_avec_marge,MARGIN=1,STATS = r,FUN = "/")*100,3)
+kable(PL, caption = "Profils lignes")
+```
+
+```{r message=FALSE,echo=FALSE}
+PC =round(sweep(data_avec_marge,MARGIN=2,STATS = c,FUN = "/")*100,3)
+kable(PC, caption = "Profils colonnes")
+```
+
+Voici les tableaux des profils ligne et colonnes. Avec les profils lignes on voit que 28% des secretaries fume "moyennement". Avec les profils colonnes, on remarque que parmis ceux qui ne fume pas, 40.98% sont Senior Employees. 
+
+\newpage
+
+On réalise ensuite l'AFC sur nos données.
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+res.ca <- CA(smoke, graph = FALSE)
+row <- get_ca_row(res.ca)
+col <- get_ca_col(res.ca)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+#valeur propre
+eig.val <- get_eigenvalue(res.ca)
+kable(round(eig.val,3) , caption = "Valeurs propres" )
+```
+
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Visualisation des valeurs propres"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 100))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+On commence avec les valeurs propres. On voit dans le tableau et le graphique que le premier plan explique 99.5% de la variance totale. Les dimensions 1 et 2 expliquent environ 87.7% et 11.7% de l’inertie totale, respectivement. On conserve ces 2 dimensions.
+
+
+
+```{r message=FALSE,echo=FALSE}
+# Coordonnées
+kable(round(row$coord,3), caption = "Coordonnées pour les catégories de salarié" ) 
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE}
+kable(round(col$coord,3), caption = "Coordonnées pour les catégories de fumeur" ) 
+```
+
+On récupère ensuite les coordonnées pour tracer le bitplot. D'abord les catégories de salarié, puis pour les catégories de fumeur.
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+#Biplot symétrique.
+fviz_ca_biplot (res.ca,repel = TRUE)
+
+# repel = TRUE : pour éviter le chevauchement de texte
+#map = "symbiplot" : Biplot symétrique. Ne conserve pas les métriques des lignes et des colonnes.
+```
+
+Et on trace ensuite le bitplot. Les catégorie de salarié sont représentées par des points bleus et les catégories de fumeur par des triangles rouges. 
+
+On remarque qu'il n y pas de groupe qui se forme entre entre catégorie d'une meme variables, par contre pour les catégories de salarié on voit qu'il y a une opposition entre les Secretaries et les Junior Managers, ce qui s'ignifie que leurs profils s'oppose également.
+
+Quand on regarde les deux variables ensembles on voit des regroupements. Par exemple on se rend compte du lien qu'il y a entre les Senior Employees et les non fumeurs, aussi entre ce qui fume "moyenement" et les Junior Employees, et entre les gros fumeurs et les junior Managers. Nous avons réussi à bien ciblé les lien qui existe entre la catégorie de salarié et la catégorie de fumeur.
+
+
+\newpage
+
+## Exercice 34
+
+Il s’agit ici de proposer une méthodologie d’analyse textuelle pour identifier les auteurs de deux fragements de texte anonymes. On connaît pour chacun de ces fragments de texte la fréquence d’apparition de certaines lettres. On suppose également que les auteurs de ces textes appartiennent à la liste suivante d’écrivains du 17ème et 18ème siècles :
+Charles Darwin, René Descartes, Thomas Hobbes, Mary Shelley et Mark Twain. Ainsi, 3 échantillons de 1000 caractères de textes de ces auteurs ont été examinés. La fréquence d’apparition de 16 lettres pour chacun de ces 15 échantillons est donnée dans un tableau de contingence.
+
+Nous réaliserons l'AFC, puis nous recommencerons avec deux textes supplémentaires ou l'auteur n'est pas spécifier. 
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+ecrivain = read.csv("C:/Users/ilias/OneDrive/Bureau/AD/ecrivain.csv", row.names=1)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+chisq.test(ecrivain[1:15])
+```
+
+On commence par voir si il y a indépendance des données. On remarque que la pvaleur est proche de zéro, donc on rejette l'hypothèse d'indépendance. L'AFC est légitime.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+#AFC 
+res.ca <- CA (ecrivain[1:15, ], graph = FALSE)
+res.ca.sup <-CA (ecrivain, row.sup = c(16,17), graph = FALSE)
+
+row <- get_ca_row(res.ca)
+col <- get_ca_col(res.ca)
+
+row.sup <- get_ca_row(res.ca.sup)
+col.sup <- get_ca_col(res.ca.sup)
+
+eig.val <- get_eigenvalue (res.ca)
+eig.val.sup <- get_eigenvalue (res.ca.sup)
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(round(head(eig.val),3), caption = "Tableau des valeurs propres") 
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+head(eig.val.sup)
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="bitplot"}
+fviz_screeplot (res.ca, addlabels = TRUE, ylim = c(0, 50))+ geom_hline (yintercept = 33.33, linetype = 2,color = "red")
+```
+
+
+On commence par determiner le nombre d'axe. Avec le graphique et le tableau on remarque 
+que les quatre premiers axes expliquent 80.6% de la variance totale. C’est un pourcentage acceptable. On conservera donc 4 axes dans notre analyse. Les résultats sont assez similaire quand on ajoute les individus supplémentaire, on conservera 4 axes égalements.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(row$cos2, 3)) , caption = "Extrait des cos2 des auteurs" )
+kable(head(round(col$cos2, 3)) , caption   = "Extrait des cos2 des lettres" )
+```
+
+\newpage
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des cos2 des auteurs et des lettres"}
+layout(matrix(1:2,1), respect=TRUE)
+corrplot(row$cos2, is.corr = FALSE) 
+corrplot(col$cos2, is.corr = FALSE)
+```
+
+
+On s'interesse maintenant à la qualité de représentation (cos2). On remarque avec le graphique et le tableau que les texte de Mark Twain on la meilleur représentations sur l'axe 1. Pour les lettres, ce sont le R et W qui sont bien représenté sur l'axe 1, on peut aussi voir les contributions sur les autres axes.
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(row$contrib, 3)) , caption = "Extrait des contributions des auteurs")
+```
+
+
+```{r message=FALSE,echo=FALSE}
+kable(head(round(col$contrib, 3)) , caption = "Extrait des contributions des lettres")
+```
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des auteurs "}
+fviz_contrib (res.ca, choice = "row", axes = 1 :2, top = 10)
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Visualisation des contributions des lettres"}
+fviz_contrib (res.ca, choice = "col", axes = 1 :2, top = 10)
+```
+
+\newpage
+
+On regarde maintenant les contributions sur le premier plan, avec les graphiques et les tableaux ci-dessus. On voit que les auteurs qui contribuent le plus au premier plan sont Mark Twain et Charles Darwin. Pour les lettres on voit que ce sont les lettre W,C,L,D,R qui contribuent le plus au premier plan.
+
+
+```{r message=FALSE,echo=FALSE, out.width="80%",fig.align="center",fig.cap="Bitplot"}
+fviz_ca_biplot (res.ca,repel = TRUE)
+```
+
+
+Quand on trace le bitplot, on remarque qu'il y a des groupes d'auteur qui se forme, associer à certaine lettres. Par exemple pour Charles Darwin, on voit que les lettres B et C sont celle ou il y a le plus de lien. Les auteurs René Descartes et Mary Shelley sont très lier, il semble avoir la meme utilisations de lettre. Mark Twain se distingue des autres, il est lié à la lettre D et aussi le plus proche du W. Pour finir Thomas Hobbes se distingue aussi mais de façon moins prononcé, il se confond presque avec René Descartes et Mary Shelley. 
+
+\newpage
+
+On réalise ensuite l'AFC avec les textes supplémentaire. On trouve des contributions et des qualité de représentation très similaires aux résultats précedents.
+
+
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+head(row.sup$cos2)
+head(col.sup$cos2)
+#corrplot(row.sup$cos2, is.corr = FALSE)
+#corrplot(col.sup$cos2, is.corr = FALSE)
+head(row.sup$contrib)
+head(col.sup$contrib)
+
+#fviz_contrib (res.ca.sup, choice = "row", axes = 1 :2, top = 10)
+#fviz_contrib (res.ca.sup, choice = "col", axes = 1 :2, top = 10)
+```
+
+
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Bitplot avec les textes supplémentaire"}
+fviz_ca_biplot (res.ca.sup,repel = TRUE)
+```
+
+On peut refaire un bitplot en incluant c'est deux textes. On voit que le texte un est fortement similaire à un texte de Mark Twain, alors que le texte 2 semble plus lié à un  
+texte de Thomas Hobbes. Nous alons classifier nos texte pour voir si cela se confirme.
+
+\newpage
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# Matrice des distances euclidienne entre individus, qui sert a tracer le dendrogramme
+d.ecrivain <- dist(row$coord[,1:4])
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE,warning=FALSE}
+# CAH - Critère de Ward
+#method = “ward.D2” correspond au vrai critère de Ward utilisant le carré de la distance
+cah.ward <- hclust(d.ecrivain,method="ward.D2")
+```
+
+```{r message=FALSE,echo=FALSE,out.width="80%",fig.align="center", fig.cap="Dendrogramme pour classifier nos auteur"}
+#dendrogramme
+plot(cah.ward, main= "Dendrogramme pour classifier nos auteurs", cex.main = 1, ylab= "", xlab= "") 
+rect.hclust(cah.ward,k=4) #rectangle pour différencier les classes ici en 4 classes
+```
+
+
+Le dendrogramme suivant nous montre la partition en 4 classes que nous offre nos données. Cela nous permet de confirmer les conclusions que nous avons tiré avec les bitplots. On voit qu'une classe est conposé des textes de t Mark Twain avec le texte 1 qui doit aussi 
+être un texte de cet auteur. La deuxième classe comprte les textes de Thomas Hobbes avec le textes 2 qui doit être issu de cet auteur. La troisième classes est composée de deux textes de Charles Darwin, notre classification n'as pas considèrer le troisième texte de Charles Darwin dans cet classe. En effet ce texte ce trouve dans la quatrième classe, avec les textes de Mary Shelley et René Descartes, qui comme nous l'avons dit ont tendance à utiliser les mêmes lettres. 
+
+
+
+
+
